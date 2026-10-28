@@ -46,6 +46,20 @@ class MoneyTest {
     }
 
     @Test
+    void addsAndMultiplies() {
+        Money price = Money.of("price", new BigDecimal("35.50"));
+
+        assertThat(price.times(2)).isEqualTo(new Money(new BigDecimal("71.00")));
+        assertThat(price.times(0)).isEqualTo(Money.ZERO);
+        assertThat(price.plus(Money.of("price", new BigDecimal("120")))).isEqualTo(new Money(new BigDecimal("155.50")));
+    }
+
+    @Test
+    void rejectsNegativeQuantity() {
+        assertThatThrownBy(() -> Money.ZERO.times(-1)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void zeroHasScaleTwo() {
         assertThat(Money.ZERO.amount()).isEqualTo(new BigDecimal("0.00"));
     }
