@@ -1,0 +1,18 @@
+# Conexão do Grafana com o banco da aplicação usando o usuário somente leitura grafana_reader,
+# que enxerga apenas as views de tempo de execução e o status das ordens de serviço.
+apiVersion: 1
+
+datasources:
+  - name: Oficina PostgreSQL
+    uid: oficina-postgres
+    type: grafana-postgresql-datasource
+    url: db:5432
+    user: grafana_reader
+    isDefault: true
+    editable: false
+    jsonData:
+      database: ${POSTGRES_DB}
+      sslmode: disable
+      postgresVersion: 1700
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}

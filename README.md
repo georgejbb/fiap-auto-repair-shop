@@ -49,7 +49,11 @@ docker compose down
 
 As variáveis de ambiente estão descritas em [.env.example](.env.example). Os valores do arquivo servem apenas para o ambiente local.
 
-Na primeira execução, o serviço `jwt-keys` gera o par de chaves RSA usado para assinar os tokens e o guarda num volume Docker; as execuções seguintes reaproveitam as mesmas chaves. Para recriar banco e chaves do zero, use `docker compose down -v`.
+Na primeira execução:
+- o serviço `jwt-keys` gera o par de chaves RSA usado para assinar os tokens e o guarda num volume Docker;
+- o banco cria o usuário somente leitura `grafana_reader`, usado pelo painel de observabilidade.
+
+As execuções seguintes reaproveitam os volumes. Para recriar banco, chaves e usuário do painel do zero, use `docker compose down -v`.
 
 ## Autenticação
 
@@ -87,7 +91,8 @@ No Swagger UI, use o botão **Authorize** e informe o token obtido em `POST /api
 | Peças e insumos | `POST`, `GET` (filtro `category`), `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/parts` | Estoque inicial zero |
 | Estoque | `POST /api/admin/parts/{id}/stock-entries`, `POST /api/admin/parts/{id}/stock-adjustments`, `GET /api/admin/parts/{id}/movements` | Estoque nunca negativo |
 
-| Ordens de serviço | `POST /api/admin/work-orders`, `GET /api/admin/work-orders/{código}` | Abertura e detalhamento |
+| Ordens de serviço | `POST /api/admin/work-orders`, `GET /api/admin/work-orders` (filtros `status`, repetível, e `customerId`), `GET /api/admin/work-orders/{código}` | Abertura, listagem por prioridade e detalhamento |
+| Tempo de execução | `GET /api/admin/work-orders/metrics/execution-time` (filtros `from` e `to`, ISO-8601) | Média geral e por serviço |
 | Itens da OS | `POST` e `DELETE` em `/api/admin/work-orders/{código}/services` e `/parts` | Somente durante o diagnóstico |
 | Transições da OS | `POST /api/admin/work-orders/{código}/start-diagnosis`, `/complete-diagnosis`, `/finish`, `/deliver` | Cada transição é uma rota |
 | Acompanhamento pelo cliente | `GET /api/public/work-orders/{código}`, `POST .../approve`, `POST .../reject` | Sem token; exige o cabeçalho `X-Customer-Document` |
@@ -135,12 +140,36 @@ O documento do cliente vai no cabeçalho `X-Customer-Document`, nunca na URL. C�
 
 No ambiente do Docker Compose, os e-mails são entregues ao Mailpit, um servidor de testes que não envia nada para fora. Os orçamentos enviados aparecem em http://localhost:8025.
 
+## Prioridade de atendimento e tempo de execução
+
+A listagem de ordens de serviço segue a prioridade de atendimento:
+1. `IN_PROGRESS`
+2. `AWAITING_APPROVAL`
+3. `IN_DIAGNOSIS`
+4. `RECEIVED`
+5. `COMPLETED`
+6. `DELIVERED`
+
+Dentro do mesmo status, a OS aberta há mais tempo vem primeiro.
+
+O tempo de execução de uma OS vai da aprovação do orçamento (`IN_PROGRESS`) até a finalização (`COMPLETED`); OS com orçamento rejeitado não entram no cálculo. A API e o painel leem as mesmas views do banco ([ADR-0007](docs/adr/0007-monitoramento-tempo-execucao.md)).
+
+O Grafana, em http://localhost:3000, abre o dashboard "Tempo de execução das ordens de serviço" sem login. Ele mostra:
+- o tempo médio;
+- as OS executadas;
+- a média por serviço;
+- a evolução diária;
+- as OS por status.
+
+O painel usa um usuário de banco somente leitura, sem acesso a dados de clientes.
+
 ## Documentação da API e saúde
 
 | Recurso | Endereço |
 |---|---|
 | Swagger UI | http://localhost:8080/q/swagger-ui |
 | Caixa de e-mail local (Mailpit) | http://localhost:8025 |
+| Painel de observabilidade (Grafana) | http://localhost:3000 |
 | Especificação OpenAPI | http://localhost:8080/q/openapi |
 | Liveness | http://localhost:8080/q/health/live |
 | Readiness (inclui o banco) | http://localhost:8080/q/health/ready |
@@ -179,6 +208,7 @@ O workflow [ci.yml](.github/workflows/ci.yml) roda em cada pull request e em cad
 │   ├── application.properties
 │   └── db/migration/       migrações Flyway
 ├── src/test/java/          testes unitários e de integração
+├── observability/          Grafana provisionado e usuário somente leitura do banco
 ├── Dockerfile
 └── docker-compose.yml
 ```
