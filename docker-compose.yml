@@ -35,6 +35,12 @@ services:
     volumes:
       - jwt-keys:/keys
 
+  # Servidor SMTP de testes: recebe os e-mails da aplicação e os exibe numa interface web, sem entregá-los.
+  mailpit:
+    image: axllent/mailpit:v1.32
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
   app:
     build: .
     environment:
@@ -45,6 +51,8 @@ services:
       JWT_PRIVATE_KEY_LOCATION: /keys/privateKey.pem
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MAILER_HOST: mailpit
+      MAILER_PORT: 1025
     ports:
       - "${APP_PORT:-8080}:8080"
     volumes:
@@ -54,6 +62,8 @@ services:
         condition: service_healthy
       jwt-keys:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
 
 volumes:
   db-data:

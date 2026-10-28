@@ -87,13 +87,60 @@ No Swagger UI, use o botão **Authorize** e informe o token obtido em `POST /api
 | Peças e insumos | `POST`, `GET` (filtro `category`), `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/parts` | Estoque inicial zero |
 | Estoque | `POST /api/admin/parts/{id}/stock-entries`, `POST /api/admin/parts/{id}/stock-adjustments`, `GET /api/admin/parts/{id}/movements` | Estoque nunca negativo |
 
+| Ordens de serviço | `POST /api/admin/work-orders`, `GET /api/admin/work-orders/{código}` | Abertura e detalhamento |
+| Itens da OS | `POST` e `DELETE` em `/api/admin/work-orders/{código}/services` e `/parts` | Somente durante o diagnóstico |
+| Transições da OS | `POST /api/admin/work-orders/{código}/start-diagnosis`, `/complete-diagnosis`, `/finish`, `/deliver` | Cada transição é uma rota |
+| Acompanhamento pelo cliente | `GET /api/public/work-orders/{código}`, `POST .../approve`, `POST .../reject` | Sem token; exige o cabeçalho `X-Customer-Document` |
+
 As exclusões são lógicas e as alterações usam `PUT` com o recurso completo ([ADR-0005](docs/adr/0005-exclusao-logica-e-put.md)). Listagens aceitam `page` (a partir de 0) e `size` (1 a 100, padrão 20).
+
+## Ciclo da ordem de serviço
+
+```
+RECEIVED --start-diagnosis--> IN_DIAGNOSIS --complete-diagnosis--> AWAITING_APPROVAL
+                              (inclui itens)  (gera orçamento e     |            |
+                                               envia e-mail)     approve       reject
+                                                                    |            |
+                              IN_PROGRESS <-------------------------+            |
+                              (estoque baixado)                                  |
+                                   | finish                                      v
+                                   +--------------------------------------> COMPLETED --deliver--> DELIVERED
+```
+
+Fluxo de ponta a ponta, na ordem de uso:
+
+1. `POST /api/auth/login` para obter o token.
+2. Cadastros:
+   - `POST /api/admin/customers` e `POST /api/admin/vehicles`, para o cliente e o veículo dele;
+   - `POST /api/admin/service-offerings`, `POST /api/admin/parts` e `POST /api/admin/parts/{id}/stock-entries`, para o catálogo e o estoque.
+3. `POST /api/admin/work-orders` com `customerId` e `vehicleId`. A resposta traz o `code` da OS.
+4. `POST /api/admin/work-orders/{código}/start-diagnosis`.
+5. Itens:
+   - `POST /api/admin/work-orders/{código}/services` com `serviceOfferingId`;
+   - `POST /api/admin/work-orders/{código}/parts` com `partId` e `quantity`.
+6. `POST /api/admin/work-orders/{código}/complete-diagnosis`. O orçamento é gerado e o cliente recebe o e-mail com o código da OS.
+7. O cliente aprova, sem token:
+
+   ```bash
+   curl -X POST http://localhost:8080/api/public/work-orders/{código}/approve \
+     -H "X-Customer-Document: 529.982.247-25"
+   ```
+
+   A OS passa a `IN_PROGRESS` e o estoque é baixado na mesma transação ([ADR-0006](docs/adr/0006-consistencia-os-estoque-notificacao.md)). Com `/reject`, a OS passa a `COMPLETED` sem execução.
+8. `POST /api/admin/work-orders/{código}/finish` e `POST /api/admin/work-orders/{código}/deliver`.
+
+O documento do cliente vai no cabeçalho `X-Customer-Document`, nunca na URL. Código inexistente e documento de outra pessoa recebem a mesma resposta 404.
+
+## E-mail do orçamento
+
+No ambiente do Docker Compose, os e-mails são entregues ao Mailpit, um servidor de testes que não envia nada para fora. Os orçamentos enviados aparecem em http://localhost:8025.
 
 ## Documentação da API e saúde
 
 | Recurso | Endereço |
 |---|---|
 | Swagger UI | http://localhost:8080/q/swagger-ui |
+| Caixa de e-mail local (Mailpit) | http://localhost:8025 |
 | Especificação OpenAPI | http://localhost:8080/q/openapi |
 | Liveness | http://localhost:8080/q/health/live |
 | Readiness (inclui o banco) | http://localhost:8080/q/health/ready |
@@ -127,7 +174,7 @@ O workflow [ci.yml](.github/workflows/ci.yml) roda em cada pull request e em cad
 │   ├── customer/           contexto Cadastro (clientes e veículos)
 │   ├── catalog/            contexto Catálogo e Estoque
 │   ├── identity/           contexto Identidade
-│   └── shared/             código transversal (erros, paginação, valor monetário)
+│   └── shared/             código transversal (erros, paginação, valor monetário, relógio)
 ├── src/main/resources/
 │   ├── application.properties
 │   └── db/migration/       migrações Flyway
