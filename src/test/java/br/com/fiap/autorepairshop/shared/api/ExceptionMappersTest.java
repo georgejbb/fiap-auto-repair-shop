@@ -68,7 +68,11 @@ class ExceptionMappersTest {
     @ParameterizedTest
     @CsvSource({
             "400, Requisição inválida",
+            "401, Não autenticado",
+            "403, Acesso negado",
             "404, Recurso não encontrado",
+            "409, Conflito com o estado atual",
+            "422, Regra de negócio violada",
             "405, Método não permitido",
             "415, Tipo de conteúdo não suportado",
             "500, Erro interno",

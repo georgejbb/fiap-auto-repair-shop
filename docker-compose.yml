@@ -17,17 +17,44 @@ services:
       timeout: 3s
       retries: 10
 
+  # Gera o par de chaves RSA do token na primeira execução e o mantém no volume nas seguintes.
+  # Nenhuma chave é versionada no repositório.
+  jwt-keys:
+    image: alpine/openssl:3.5.9
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ ! -f /keys/privateKey.pem ]; then
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /keys/privateKey.pem &&
+          openssl pkey -in /keys/privateKey.pem -pubout -out /keys/publicKey.pem &&
+          chmod 644 /keys/privateKey.pem /keys/publicKey.pem &&
+          echo "Par de chaves gerado."
+        else
+          echo "Par de chaves existente mantido."
+        fi
+    volumes:
+      - jwt-keys:/keys
+
   app:
     build: .
     environment:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_PUBLIC_KEY_LOCATION: /keys/publicKey.pem
+      JWT_PRIVATE_KEY_LOCATION: /keys/privateKey.pem
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     ports:
       - "${APP_PORT:-8080}:8080"
+    volumes:
+      - jwt-keys:/keys:ro
     depends_on:
       db:
         condition: service_healthy
+      jwt-keys:
+        condition: service_completed_successfully
 
 volumes:
   db-data:
+  jwt-keys:

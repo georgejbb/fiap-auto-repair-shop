@@ -22,9 +22,13 @@ public class UnexpectedExceptionMapper implements ExceptionMapper<Throwable> {
 
     @Override
     public Response toResponse(Throwable exception) {
+        return internalError(exception, RequestPaths.of(uriInfo));
+    }
+
+    static Response internalError(Throwable exception, String instance) {
         String errorId = UUID.randomUUID().toString();
         LOG.errorf(exception, "Erro não tratado [errorId=%s]", errorId);
         String detail = "Ocorreu um erro inesperado. Informe o identificador " + errorId + " ao suporte.";
-        return Problem.of(500, detail, RequestPaths.of(uriInfo)).toResponse();
+        return Problem.of(500, detail, instance).toResponse();
     }
 }

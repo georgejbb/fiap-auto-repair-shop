@@ -27,7 +27,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>georgejbb</sonar.organization>
         <sonar.projectKey>georgejbb_fiap-auto-repair-shop</sonar.projectKey>
-        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/jacoco-report/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.exclusions>**/package-info.java</sonar.exclusions>
 
         <!-- Cobertura mínima exigida nas camadas de domínio e aplicação -->
@@ -83,6 +83,18 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-build</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-common</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -97,6 +109,11 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jacoco</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -141,9 +158,10 @@
                 </configuration>
             </plugin>
             <!--
-                O agente JaCoCo instrumenta os testes unitários e os testes @QuarkusTest, que rodam na mesma JVM.
-                As camadas de domínio e aplicação não passam por transformação de bytecode do Quarkus,
-                portanto a medição dessas camadas, que é a verificada pela regra de cobertura, é exata.
+                Cobertura em duas partes que gravam no mesmo arquivo: este agente mede as classes carregadas
+                fora do Quarkus (testes unitários) e a extensão quarkus-jacoco mede as carregadas pelo Quarkus
+                nos testes @QuarkusTest, inclusive as que o Quarkus transforma, como os repositórios Panache.
+                A extensão gera o relatório consolidado em target/jacoco-report.
             -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -155,13 +173,11 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
+                        <configuration>
+                            <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+                            <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
+                            <append>true</append>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>coverage-check</id>
@@ -170,6 +186,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
                             <includes>
                                 <include>**/domain/**</include>
                                 <include>**/application/**</include>
