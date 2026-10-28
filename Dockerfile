@@ -15,7 +15,8 @@ RUN mvn -B -q package -DskipTests
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
-RUN addgroup -S app && adduser -S app -G app
+# Atualiza os pacotes do Alpine para incluir correções publicadas depois da imagem base.
+RUN apk upgrade --no-cache && addgroup -S app && adduser -S app -G app
 
 COPY --from=build --chown=app:app /build/target/quarkus-app/lib/ lib/
 COPY --from=build --chown=app:app /build/target/quarkus-app/*.jar ./

@@ -1,0 +1,20 @@
+Análise de vulnerabilidades do repositório (Trivy)
+Data: 2026-10-28
+Ferramenta: Trivy 0.76.1 (imagem aquasec/trivy:0.76.1)
+Versão analisada: branch docs/delivery, a partir do commit f17b8a7 da main
+Comando: trivy fs --scanners vuln,secret,misconfig --skip-dirs target --skip-dirs .git --skip-files .env .
+
+
+Report Summary
+
+┌────────────┬────────────┬─────────────────┬─────────┬───────────────────┐
+│   Target   │    Type    │ Vulnerabilities │ Secrets │ Misconfigurations │
+├────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ pom.xml    │    pom     │        0        │    -    │         -         │
+├────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ Dockerfile │ dockerfile │        -        │    -    │         0         │
+└────────────┴────────────┴─────────────────┴─────────┴───────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
