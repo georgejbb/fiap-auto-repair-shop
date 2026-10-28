@@ -1,0 +1,906 @@
+{
+  "info": {
+    "name": "Oficina Mecânica - API (FIAP SOAT Fase 1)",
+    "description": "Fluxo completo da ordem de serviço, do login à entrega, com testes em cada requisição. As variáveis são preenchidas durante a execução. Para rodar pela linha de comando: npx newman run docs/api/fiap-auto-repair-shop.postman_collection.json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Autenticação",
+      "description": "Login do usuário administrativo. O token fica na variável token e é usado nas rotas /api/admin.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('token Bearer com validade', () => {",
+                  "    pm.expect(body.tokenType).to.eql('Bearer');",
+                  "    pm.expect(body.expiresIn).to.be.above(0);",
+                  "});",
+                  "pm.collectionVariables.set('token', body.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rota administrativa sem token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/customers",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('desafio Bearer', () => pm.expect(pm.response.headers.get('WWW-Authenticate')).to.include('Bearer'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Cadastros",
+      "description": "Cliente, veículo, serviço, peça e entrada de estoque usados pela ordem de serviço.",
+      "item": [
+        {
+          "name": "Cadastrar cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document\": \"{{customerDocument}}\",\n  \"name\": \"Maria Silva\",\n  \"email\": \"{{customerEmail}}\",\n  \"phone\": \"11999990000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Gera CPF e placa válidos a cada execução, para a coleção rodar várias vezes no mesmo banco.",
+                  "function digit(numbers) {",
+                  "    let sum = 0;",
+                  "    for (let i = 0; i < numbers.length; i++) {",
+                  "        sum += numbers[i] * (numbers.length + 1 - i);",
+                  "    }",
+                  "    const rest = (sum * 10) % 11;",
+                  "    return rest === 10 ? 0 : rest;",
+                  "}",
+                  "let base;",
+                  "do {",
+                  "    base = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));",
+                  "} while (new Set(base).size === 1);",
+                  "base.push(digit(base));",
+                  "base.push(digit(base));",
+                  "const cpf = base.join('');",
+                  "const letter = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));",
+                  "const number = () => Math.floor(Math.random() * 10);",
+                  "pm.collectionVariables.set('customerDocument', cpf);",
+                  "pm.collectionVariables.set('customerEmail', 'cliente.' + cpf + '@exemplo.com');",
+                  "pm.collectionVariables.set('licensePlate', letter() + letter() + letter() + number() + letter() + number() + number());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('documento identificado como CPF', () => pm.expect(body.documentType).to.eql('CPF'));",
+                  "pm.collectionVariables.set('customerId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar cliente com documento repetido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document\": \"{{customerDocument}}\",\n  \"name\": \"Maria Silva\",\n  \"email\": \"{{customerEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar cliente com CPF inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document\": \"111.111.111-11\",\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria@exemplo.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar cliente por documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/customers?document={{customerDocument}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('um cliente encontrado', () => pm.expect(pm.response.json().items).to.have.lengthOf(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar veículo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/vehicles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"licensePlate\": \"{{licensePlate}}\",\n  \"brand\": \"Fiat\",\n  \"model\": \"Argo\",\n  \"year\": 2022,\n  \"ownerId\": \"{{customerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('vehicleId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar serviço",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/service-offerings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Troca de óleo\",\n  \"description\": \"Troca do óleo do motor e do filtro\",\n  \"price\": 120.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('serviceOfferingId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar peça",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/parts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Filtro de óleo\",\n  \"category\": \"PART\",\n  \"unitPrice\": 35.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('estoque inicial zero', () => pm.expect(pm.response.json().stockQuantity).to.eql(0));",
+                  "pm.collectionVariables.set('partId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar entrada de estoque",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/parts/{{partId}}/stock-entries",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('estoque 5', () => pm.expect(pm.response.json().stockQuantity).to.eql(5));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Ordem de serviço",
+      "description": "Abertura, diagnóstico, inclusão de itens e geração do orçamento.",
+      "item": [
+        {
+          "name": "Abrir OS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/work-orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"vehicleId\": \"{{vehicleId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('status RECEIVED', () => pm.expect(body.status).to.eql('RECEIVED'));",
+                  "pm.collectionVariables.set('workOrderCode', body.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Iniciar diagnóstico",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/start-diagnosis"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status IN_DIAGNOSIS', () => pm.expect(pm.response.json().status).to.eql('IN_DIAGNOSIS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incluir serviço",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/services",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceOfferingId\": \"{{serviceOfferingId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('serviço com preço do catálogo', () => pm.expect(pm.response.json().services[0].price).to.eql(120.00));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incluir peça acima do estoque",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/parts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partId\": \"{{partId}}\",\n  \"quantity\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incluir peça",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/parts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partId\": \"{{partId}}\",\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('duas unidades', () => pm.expect(pm.response.json().parts[0].quantity).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Concluir diagnóstico e gerar orçamento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/complete-diagnosis"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('status AWAITING_APPROVAL', () => pm.expect(body.status).to.eql('AWAITING_APPROVAL'));",
+                  "pm.test('total 120,00 + 2 x 35,50', () => pm.expect(body.estimate.total).to.eql(191.00));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Decisão do cliente",
+      "description": "Rotas públicas: o cliente usa o código da OS e o documento no cabeçalho X-Customer-Document.",
+      "item": [
+        {
+          "name": "Conferir e-mail do orçamento no Mailpit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{mailpitUrl}}/api/v1/search?query=to:{{customerEmail}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Consulta o Mailpit do docker compose, que recebe o e-mail do orçamento no ambiente local."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// O e-mail sai depois do commit da conclusão do diagnóstico; espera o envio.",
+                  "setTimeout(() => {}, 1500);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const messages = pm.response.json().messages;",
+                  "pm.test('um e-mail para o cliente', () => pm.expect(messages).to.have.lengthOf(1));",
+                  "pm.test('assunto com o orçamento', () => pm.expect(messages[0].Subject.toLowerCase()).to.include('orçamento'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar OS com documento incorreto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Customer-Document",
+                "value": "529.982.247-25"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/work-orders/{{workOrderCode}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404, igual a código inexistente', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar OS (cliente)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Customer-Document",
+                "value": "{{customerDocument}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/work-orders/{{workOrderCode}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aguardando aprovação', () => pm.expect(pm.response.json().status).to.eql('AWAITING_APPROVAL'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aprovar orçamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Customer-Document",
+                "value": "{{customerDocument}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/work-orders/{{workOrderCode}}/approve",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status IN_PROGRESS', () => pm.expect(pm.response.json().status).to.eql('IN_PROGRESS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar estoque após aprovação",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/parts/{{partId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('estoque baixado de 5 para 3', () => pm.expect(pm.response.json().stockQuantity).to.eql(3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar movimentações da peça",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/parts/{{partId}}/movements"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const types = pm.response.json().items.map(m => m.type);",
+                  "pm.test('entrada e baixa registradas', () => pm.expect(types).to.include.members(['INBOUND', 'CONSUMPTION']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Execução e entrega",
+      "description": "Finalização do serviço e entrega do veículo.",
+      "item": [
+        {
+          "name": "Finalizar serviço",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/finish"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status COMPLETED', () => pm.expect(pm.response.json().status).to.eql('COMPLETED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entregar veículo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/deliver"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('status DELIVERED', () => pm.expect(body.status).to.eql('DELIVERED'));",
+                  "pm.test('histórico completo', () => pm.expect(body.statusHistory.map(s => s.to)).to.eql(",
+                  "    ['RECEIVED', 'IN_DIAGNOSIS', 'AWAITING_APPROVAL', 'IN_PROGRESS', 'COMPLETED', 'DELIVERED']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entregar veículo de novo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders/{{workOrderCode}}/deliver"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422, transição inválida', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Listagem e métricas",
+      "description": "Lista de OS por prioridade e tempo médio de execução.",
+      "item": [
+        {
+          "name": "Listar OS por prioridade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders?customerId={{customerId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('OS do cliente listada', () => pm.expect(pm.response.json().items.map(o => o.code)).to.include(pm.collectionVariables.get('workOrderCode')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tempo médio de execução",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/work-orders/metrics/execution-time"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ao menos uma OS executada', () => pm.expect(body.executedCount).to.be.above(0));",
+                  "pm.test('média por serviço', () => pm.expect(body.byService).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "mailpitUrl",
+      "value": "http://localhost:8025"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin123"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "customerDocument",
+      "value": ""
+    },
+    {
+      "key": "customerEmail",
+      "value": ""
+    },
+    {
+      "key": "licensePlate",
+      "value": ""
+    },
+    {
+      "key": "customerId",
+      "value": ""
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "serviceOfferingId",
+      "value": ""
+    },
+    {
+      "key": "partId",
+      "value": ""
+    },
+    {
+      "key": "workOrderCode",
+      "value": ""
+    }
+  ]
+}
