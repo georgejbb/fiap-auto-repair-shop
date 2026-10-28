@@ -16,9 +16,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -28,16 +26,53 @@ import java.util.UUID;
 @ApplicationScoped
 class SqlWorkOrderQueries implements WorkOrderQueries {
 
-    /** Em execução termina primeiro; aguardando aprovação depende do cliente; finalizadas e entregues por último. */
-    private static final String PRIORITY = """
-            CASE wo.status
-                WHEN 'IN_PROGRESS' THEN 1
-                WHEN 'AWAITING_APPROVAL' THEN 2
-                WHEN 'IN_DIAGNOSIS' THEN 3
-                WHEN 'RECEIVED' THEN 4
-                WHEN 'COMPLETED' THEN 5
-                ELSE 6
-            END""";
+    /**
+     * Ordena por prioridade de atendimento: em execução termina primeiro; aguardando aprovação depende do
+     * cliente; finalizadas e entregues por último. Dentro do status, a aberta há mais tempo primeiro.
+     * As consultas são texto fixo: filtros ausentes viram parâmetros que aceitam todos os valores.
+     */
+    private static final String LIST = """
+            SELECT wo.id, wo.status, c.name, v.license_plate, wo.estimate_total, wo.opened_at
+            FROM work_order wo
+            JOIN customer c ON c.id = wo.customer_id
+            JOIN vehicle v ON v.id = wo.vehicle_id
+            WHERE wo.status IN (:statuses)
+              AND (:allCustomers = TRUE OR wo.customer_id = :customerId)
+            ORDER BY CASE wo.status
+                         WHEN 'IN_PROGRESS' THEN 1
+                         WHEN 'AWAITING_APPROVAL' THEN 2
+                         WHEN 'IN_DIAGNOSIS' THEN 3
+                         WHEN 'RECEIVED' THEN 4
+                         WHEN 'COMPLETED' THEN 5
+                         ELSE 6
+                     END,
+                     wo.opened_at, wo.id
+            LIMIT :size OFFSET :offset""";
+
+    private static final String COUNT = """
+            SELECT COUNT(*)
+            FROM work_order wo
+            WHERE wo.status IN (:statuses)
+              AND (:allCustomers = TRUE OR wo.customer_id = :customerId)""";
+
+    private static final String EXECUTION_OVERALL = """
+            SELECT COUNT(*), AVG(duration_seconds)
+            FROM work_order_execution_time
+            WHERE completed_at BETWEEN :from AND :to""";
+
+    private static final String EXECUTION_BY_SERVICE = """
+            SELECT service_offering_id, MAX(service_name), COUNT(*), AVG(duration_seconds)
+            FROM work_order_service_execution_time
+            WHERE completed_at BETWEEN :from AND :to
+            GROUP BY service_offering_id
+            ORDER BY MAX(service_name), service_offering_id""";
+
+    /** Limites usados quando o período não é informado; abrangem qualquer data gravada pela aplicação. */
+    private static final Instant EARLIEST = Instant.parse("1900-01-01T00:00:00Z");
+    private static final Instant LATEST = Instant.parse("9999-12-31T23:59:59Z");
+
+    /** Valor do parâmetro de cliente quando o filtro não é usado; a condição allCustomers o torna irrelevante. */
+    private static final UUID ANY_CUSTOMER = new UUID(0, 0);
 
     private final EntityManager entityManager;
 
@@ -47,30 +82,23 @@ class SqlWorkOrderQueries implements WorkOrderQueries {
 
     @Override
     public Page<WorkOrderSummary> list(WorkOrderFilter filter, int page, int size) {
-        Map<String, Object> parameters = new HashMap<>();
-        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
-        if (!filter.statuses().isEmpty()) {
-            where.append(" AND wo.status IN (:statuses)");
-            parameters.put("statuses", filter.statuses().stream().map(Enum::name).toList());
-        }
-        if (filter.customerId() != null) {
-            where.append(" AND wo.customer_id = :customerId");
-            parameters.put("customerId", filter.customerId());
-        }
-        String from = " FROM work_order wo"
-                + " JOIN customer c ON c.id = wo.customer_id"
-                + " JOIN vehicle v ON v.id = wo.vehicle_id";
+        List<WorkOrderStatus> statuses = filter.statuses().isEmpty()
+                ? List.of(WorkOrderStatus.values())
+                : filter.statuses();
+        List<String> statusNames = statuses.stream().map(Enum::name).toList();
+        boolean allCustomers = filter.customerId() == null;
+        UUID customerId = allCustomers ? ANY_CUSTOMER : filter.customerId();
 
-        Query select = entityManager.createNativeQuery(
-                "SELECT wo.id, wo.status, c.name, v.license_plate, wo.estimate_total, wo.opened_at" + from + where
-                        + " ORDER BY " + PRIORITY + ", wo.opened_at, wo.id LIMIT :size OFFSET :offset");
-        Query count = entityManager.createNativeQuery("SELECT COUNT(*)" + from + where);
-        parameters.forEach((name, value) -> {
-            select.setParameter(name, value);
-            count.setParameter(name, value);
-        });
-        select.setParameter("size", size);
-        select.setParameter("offset", page * size);
+        Query select = entityManager.createNativeQuery(LIST)
+                .setParameter("statuses", statusNames)
+                .setParameter("allCustomers", allCustomers)
+                .setParameter("customerId", customerId)
+                .setParameter("size", size)
+                .setParameter("offset", page * size);
+        Query count = entityManager.createNativeQuery(COUNT)
+                .setParameter("statuses", statusNames)
+                .setParameter("allCustomers", allCustomers)
+                .setParameter("customerId", customerId);
 
         List<WorkOrderSummary> items = new ArrayList<>();
         for (Object row : select.getResultList()) {
@@ -85,31 +113,18 @@ class SqlWorkOrderQueries implements WorkOrderQueries {
 
     @Override
     public ExecutionTimeReport executionTime(ExecutionPeriod period) {
-        Map<String, Object> parameters = new HashMap<>();
-        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
-        if (period.from() != null) {
-            where.append(" AND completed_at >= :from");
-            parameters.put("from", period.from());
-        }
-        if (period.to() != null) {
-            where.append(" AND completed_at <= :to");
-            parameters.put("to", period.to());
-        }
+        Instant from = period.from() == null ? EARLIEST : period.from();
+        Instant to = period.to() == null ? LATEST : period.to();
 
-        Query overall = entityManager.createNativeQuery(
-                "SELECT COUNT(*), AVG(duration_seconds) FROM work_order_execution_time" + where);
-        Query byService = entityManager.createNativeQuery(
-                "SELECT service_offering_id, MAX(service_name), COUNT(*), AVG(duration_seconds)"
-                        + " FROM work_order_service_execution_time" + where
-                        + " GROUP BY service_offering_id ORDER BY MAX(service_name), service_offering_id");
-        parameters.forEach((name, value) -> {
-            overall.setParameter(name, value);
-            byService.setParameter(name, value);
-        });
-
-        Object[] totals = (Object[]) overall.getSingleResult();
+        Object[] totals = (Object[]) entityManager.createNativeQuery(EXECUTION_OVERALL)
+                .setParameter("from", from)
+                .setParameter("to", to)
+                .getSingleResult();
         List<ExecutionTimeReport.ServiceAverage> services = new ArrayList<>();
-        for (Object row : byService.getResultList()) {
+        for (Object row : entityManager.createNativeQuery(EXECUTION_BY_SERVICE)
+                .setParameter("from", from)
+                .setParameter("to", to)
+                .getResultList()) {
             Object[] columns = (Object[]) row;
             services.add(new ExecutionTimeReport.ServiceAverage((UUID) columns[0], (String) columns[1],
                     ((Number) columns[2]).longValue(), seconds(columns[3])));
