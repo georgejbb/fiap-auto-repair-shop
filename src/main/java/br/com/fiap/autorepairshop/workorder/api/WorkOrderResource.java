@@ -1,24 +1,40 @@
 package br.com.fiap.autorepairshop.workorder.api;
 
+import br.com.fiap.autorepairshop.shared.api.PageResponse;
+import br.com.fiap.autorepairshop.shared.domain.Page;
+import br.com.fiap.autorepairshop.workorder.application.ExecutionPeriod;
+import br.com.fiap.autorepairshop.workorder.application.ExecutionTimeReport;
 import br.com.fiap.autorepairshop.workorder.application.WorkOrderDetails;
+import br.com.fiap.autorepairshop.workorder.application.WorkOrderFilter;
+import br.com.fiap.autorepairshop.workorder.application.WorkOrderQueries;
 import br.com.fiap.autorepairshop.workorder.application.WorkOrderService;
+import br.com.fiap.autorepairshop.workorder.application.WorkOrderSummary;
+import br.com.fiap.autorepairshop.workorder.domain.WorkOrderStatus;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -34,9 +50,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 public class WorkOrderResource {
 
     private final WorkOrderService workOrders;
+    private final WorkOrderQueries queries;
 
-    public WorkOrderResource(WorkOrderService workOrders) {
+    public WorkOrderResource(WorkOrderService workOrders, WorkOrderQueries queries) {
         this.workOrders = workOrders;
+        this.queries = queries;
     }
 
     @Schema(description = "Cliente e veículo da nova OS")
@@ -49,6 +67,48 @@ public class WorkOrderResource {
 
     @Schema(description = "Peça ou insumo a incluir")
     public record AddPartRequest(@NotNull UUID partId, @Schema(examples = "2") @NotNull Integer quantity) {
+    }
+
+    @Schema(description = "Ordem de serviço na listagem")
+    public record WorkOrderSummaryResponse(UUID code, WorkOrderStatus status, String customerName,
+            String licensePlate,
+            @Schema(description = "Ausente antes da conclusão do diagnóstico") BigDecimal estimateTotal,
+            Instant openedAt) {
+
+        static WorkOrderSummaryResponse from(WorkOrderSummary summary) {
+            return new WorkOrderSummaryResponse(summary.code(), summary.status(), summary.customerName(),
+                    summary.licensePlate(),
+                    summary.estimateTotal() == null ? null : summary.estimateTotal().amount(), summary.openedAt());
+        }
+    }
+
+    @GET
+    @Operation(summary = "Lista ordens de serviço por prioridade de atendimento",
+            description = "Ordem: IN_PROGRESS, AWAITING_APPROVAL, IN_DIAGNOSIS, RECEIVED, COMPLETED, DELIVERED; "
+                    + "dentro do mesmo status, a aberta há mais tempo primeiro.")
+    @APIResponse(responseCode = "400", description = "Status inválido ou paginação fora dos limites")
+    public PageResponse<WorkOrderSummaryResponse> list(
+            @Parameter(description = "Status a incluir; repita o parâmetro para combinar vários")
+            @QueryParam("status") List<String> statuses,
+            @Parameter(description = "Id do cliente") @QueryParam("customerId") UUID customerId,
+            @QueryParam("page") @DefaultValue("0") @Min(0) int page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+        Page<WorkOrderSummary> result = queries.list(WorkOrderFilter.of(statuses, customerId), page, size);
+        return new PageResponse<>(result.map(WorkOrderSummaryResponse::from).items(), page, size, result.total());
+    }
+
+    @GET
+    @Path("/metrics/execution-time")
+    @Operation(summary = "Tempo médio de execução das ordens de serviço",
+            description = "Considera as OS que passaram de IN_PROGRESS para COMPLETED, opcionalmente concluídas "
+                    + "no período informado. OS rejeitadas e ainda em execução ficam fora.")
+    @APIResponse(responseCode = "400", description = "Data fora do formato ISO-8601 ou período invertido")
+    public ExecutionTimeReport executionTime(
+            @Parameter(description = "Início do período de conclusão, ISO-8601", example = "2026-10-01T00:00:00Z")
+            @QueryParam("from") String from,
+            @Parameter(description = "Fim do período de conclusão, ISO-8601", example = "2026-10-31T23:59:59Z")
+            @QueryParam("to") String to) {
+        return queries.executionTime(ExecutionPeriod.of(from, to));
     }
 
     @POST
