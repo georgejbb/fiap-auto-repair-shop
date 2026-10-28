@@ -49,6 +49,46 @@ docker compose down
 
 As variáveis de ambiente estão descritas em [.env.example](.env.example). Os valores do arquivo servem apenas para o ambiente local.
 
+Na primeira execução, o serviço `jwt-keys` gera o par de chaves RSA usado para assinar os tokens e o guarda num volume Docker; as execuções seguintes reaproveitam as mesmas chaves. Para recriar banco e chaves do zero, use `docker compose down -v`.
+
+## Autenticação
+
+As rotas sob `/api/admin/` exigem um token JWT com o papel `ADMIN`, válido por 1 hora. Decisão detalhada na [ADR-0004](docs/adr/0004-autenticacao-jwt.md).
+
+Credenciais de demonstração, definidas em `.env.example` e criadas na primeira inicialização:
+
+| Login | Senha |
+|---|---|
+| `admin` | `admin123` |
+
+Obter o token e usá-lo:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123"}' | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
+
+curl -X POST http://localhost:8080/api/admin/customers \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"document": "529.982.247-25", "name": "Maria Silva", "email": "maria.silva@email.com"}'
+```
+
+No Swagger UI, use o botão **Authorize** e informe o token obtido em `POST /api/auth/login`.
+
+## Rotas
+
+| Recurso | Rotas | Observações |
+|---|---|---|
+| Autenticação | `POST /api/auth/login` | Pública |
+| Clientes | `POST`, `GET` (filtro `document`), `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/customers` | CPF ou CNPJ, inclusive alfanumérico; documento imutável |
+| Veículos | `POST`, `GET` (filtros `licensePlate`, `ownerId`), `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/vehicles` | Placa antiga ou Mercosul; placa imutável |
+| Serviços | `POST`, `GET`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/service-offerings` | Preço com até duas casas decimais |
+| Peças e insumos | `POST`, `GET` (filtro `category`), `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/parts` | Estoque inicial zero |
+| Estoque | `POST /api/admin/parts/{id}/stock-entries`, `POST /api/admin/parts/{id}/stock-adjustments`, `GET /api/admin/parts/{id}/movements` | Estoque nunca negativo |
+
+As exclusões são lógicas e as alterações usam `PUT` com o recurso completo ([ADR-0005](docs/adr/0005-exclusao-logica-e-put.md)). Listagens aceitam `page` (a partir de 0) e `size` (1 a 100, padrão 20).
+
 ## Documentação da API e saúde
 
 | Recurso | Endereço |
@@ -66,7 +106,7 @@ Erros da API seguem o formato Problem Details (RFC 9457), com `Content-Type: app
 ./mvnw verify
 ```
 
-No Windows, use `mvnw.cmd verify`. O comando executa os testes unitários e de integração e gera o relatório de cobertura em `target/site/jacoco/index.html`. O build falha se a cobertura de linhas ou de ramificações das camadas `domain` e `application` ficar abaixo de 80%.
+No Windows, use `mvnw.cmd verify`. O comando executa os testes unitários e de integração e gera o relatório de cobertura em `target/jacoco-report/index.html`. O build falha se a cobertura de linhas ou de ramificações das camadas `domain` e `application` ficar abaixo de 80%.
 
 ## Integração contínua
 
@@ -87,7 +127,7 @@ O workflow [ci.yml](.github/workflows/ci.yml) roda em cada pull request e em cad
 │   ├── customer/           contexto Cadastro (clientes e veículos)
 │   ├── catalog/            contexto Catálogo e Estoque
 │   ├── identity/           contexto Identidade
-│   └── shared/             código transversal (tratamento de erros)
+│   └── shared/             código transversal (erros, paginação, valor monetário)
 ├── src/main/resources/
 │   ├── application.properties
 │   └── db/migration/       migrações Flyway
