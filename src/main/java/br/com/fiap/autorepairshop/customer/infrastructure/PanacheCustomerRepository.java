@@ -20,6 +20,11 @@ class PanacheCustomerRepository implements CustomerRepository, PanacheRepository
     }
 
     @Override
+    public Optional<Customer> findIncludingDeleted(UUID id) {
+        return findByIdOptional(id).map(PanacheCustomerRepository::toDomain);
+    }
+
+    @Override
     public Optional<Customer> findActiveByDocument(String documentNumber) {
         return find("document = ?1 and deletedAt is null", documentNumber).firstResultOptional()
                 .map(PanacheCustomerRepository::toDomain);

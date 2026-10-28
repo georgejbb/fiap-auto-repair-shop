@@ -78,6 +78,18 @@ class VehicleServiceTest {
     }
 
     @Test
+    void getIncludingDeletedFindsDeletedVehicle() {
+        Vehicle vehicle = vehicle(owner.id());
+        vehicle.delete(NOW);
+        when(vehicles.findIncludingDeleted(vehicle.id())).thenReturn(Optional.of(vehicle));
+        UUID unknown = UUID.randomUUID();
+        when(vehicles.findIncludingDeleted(unknown)).thenReturn(Optional.empty());
+
+        assertThat(service.getIncludingDeleted(vehicle.id())).isSameAs(vehicle);
+        assertThatThrownBy(() -> service.getIncludingDeleted(unknown)).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void findByLicensePlateNormalizesInput() {
         Vehicle vehicle = vehicle(owner.id());
         when(vehicles.findActiveByLicensePlate("ABC1234")).thenReturn(Optional.of(vehicle));

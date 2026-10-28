@@ -11,6 +11,9 @@ public interface CustomerRepository {
 
     Optional<Customer> findActiveById(UUID id);
 
+    /** Busca também clientes excluídos, para exibir referências históricas, como as das ordens de serviço. */
+    Optional<Customer> findIncludingDeleted(UUID id);
+
     Optional<Customer> findActiveByDocument(String documentNumber);
 
     Page<Customer> listActive(int page, int size);

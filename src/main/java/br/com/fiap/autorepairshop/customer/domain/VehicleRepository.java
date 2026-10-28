@@ -11,6 +11,9 @@ public interface VehicleRepository {
 
     Optional<Vehicle> findActiveById(UUID id);
 
+    /** Busca também veículos excluídos, para exibir referências históricas, como as das ordens de serviço. */
+    Optional<Vehicle> findIncludingDeleted(UUID id);
+
     Optional<Vehicle> findActiveByLicensePlate(String licensePlate);
 
     Page<Vehicle> listActive(int page, int size);
