@@ -3,6 +3,7 @@ package br.com.fiap.autorepairshop.catalog.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import br.com.fiap.autorepairshop.shared.domain.BusinessRuleException;
 import br.com.fiap.autorepairshop.shared.domain.InvalidValueException;
 import br.com.fiap.autorepairshop.shared.domain.Money;
 import java.math.BigDecimal;
@@ -103,6 +104,47 @@ class PartTest {
 
         assertThatThrownBy(() -> part.update(null, PartCategory.PART, PRICE, LATER))
                 .isInstanceOf(InvalidValueException.class);
+    }
+
+    @Test
+    void consumptionReducesStockAndReferencesWorkOrder() {
+        Part part = Part.create("Filtro", PartCategory.PART, PRICE, NOW);
+        part.registerInbound(5, NOW);
+        UUID workOrder = UUID.randomUUID();
+
+        StockMovement movement = part.consume(2, workOrder, LATER);
+
+        assertThat(part.stockQuantity()).isEqualTo(3);
+        assertThat(movement.type()).isEqualTo(StockMovementType.CONSUMPTION);
+        assertThat(movement.quantity()).isEqualTo(-2);
+        assertThat(movement.workOrderId()).isEqualTo(workOrder);
+        assertThat(part.updatedAt()).isEqualTo(LATER);
+    }
+
+    @Test
+    void consumptionBeyondStockIsRejectedWithoutChange() {
+        Part part = Part.create("Filtro", PartCategory.PART, PRICE, NOW);
+        part.registerInbound(1, NOW);
+
+        assertThatThrownBy(() -> part.consume(2, UUID.randomUUID(), LATER))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Estoque insuficiente de Filtro");
+        assertThat(part.stockQuantity()).isEqualTo(1);
+    }
+
+    @Test
+    void consumptionRequiresPositiveQuantity() {
+        Part part = Part.create("Filtro", PartCategory.PART, PRICE, NOW);
+
+        assertThatThrownBy(() -> part.consume(0, UUID.randomUUID(), LATER)).isInstanceOf(InvalidValueException.class);
+    }
+
+    @Test
+    void entriesAndAdjustmentsHaveNoWorkOrder() {
+        Part part = Part.create("Filtro", PartCategory.PART, PRICE, NOW);
+
+        assertThat(part.registerInbound(1, NOW).workOrderId()).isNull();
+        assertThat(part.adjustTo(0, NOW).workOrderId()).isNull();
     }
 
     @Test

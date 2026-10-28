@@ -29,4 +29,7 @@ class StockMovementEntity {
 
     @Column(name = "occurred_at", nullable = false)
     Instant occurredAt;
+
+    @Column(name = "work_order_id")
+    UUID workOrderId;
 }

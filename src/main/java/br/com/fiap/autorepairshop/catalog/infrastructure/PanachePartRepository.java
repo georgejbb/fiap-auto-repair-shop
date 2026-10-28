@@ -64,6 +64,7 @@ class PanachePartRepository implements PartRepository, PanacheRepositoryBase<Par
         entity.type = movement.type();
         entity.quantity = movement.quantity();
         entity.occurredAt = movement.occurredAt();
+        entity.workOrderId = movement.workOrderId();
         movements.persistAndFlush(entity);
     }
 
@@ -91,7 +92,8 @@ class PanachePartRepository implements PartRepository, PanacheRepositoryBase<Par
     }
 
     private static StockMovement toDomain(StockMovementEntity entity) {
-        return new StockMovement(entity.id, entity.partId, entity.type, entity.quantity, entity.occurredAt);
+        return new StockMovement(entity.id, entity.partId, entity.type, entity.quantity, entity.occurredAt,
+                entity.workOrderId);
     }
 
     @ApplicationScoped
