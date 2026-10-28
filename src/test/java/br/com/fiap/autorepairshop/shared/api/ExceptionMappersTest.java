@@ -9,10 +9,13 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ExceptionMappersTest {
 
@@ -62,9 +65,34 @@ class ExceptionMappersTest {
         assertThat(problem.detail()).doesNotContain("senha", "SELECT", "IllegalStateException");
     }
 
-    @Test
-    void unknownStatusGetsGenericTitle() {
-        assertThat(Problem.titleFor(418)).isEqualTo("Erro HTTP 418");
+    @ParameterizedTest
+    @CsvSource({
+            "400, Requisição inválida",
+            "404, Recurso não encontrado",
+            "405, Método não permitido",
+            "415, Tipo de conteúdo não suportado",
+            "500, Erro interno",
+            "418, Erro HTTP 418"
+    })
+    void titleMatchesStatus(int status, String title) {
+        assertThat(Problem.titleFor(status)).isEqualTo(title);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "400 | O corpo ou os parâmetros da requisição não puderam ser interpretados.",
+            "404 | O recurso solicitado não existe.",
+            "405 | O método HTTP não é suportado por este recurso.",
+            "415 | O tipo de conteúdo enviado não é suportado por este recurso.",
+            "409 | A requisição não pôde ser atendida."
+    })
+    void webApplicationDetailMatchesStatus(int status, String detail) {
+        Problem problem = (Problem) new WebApplicationExceptionMapper()
+                .toResponse(new WebApplicationException(status))
+                .getEntity();
+
+        assertThat(problem.status()).isEqualTo(status);
+        assertThat(problem.detail()).isEqualTo(detail);
     }
 
     private static ConstraintViolation<?> violation(String method, String parameter, String field, String message) {

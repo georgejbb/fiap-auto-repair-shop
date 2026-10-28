@@ -48,13 +48,9 @@ public record Problem(String type, String title, int status, String detail, Stri
     static String titleFor(int status) {
         return switch (status) {
             case 400 -> "Requisição inválida";
-            case 401 -> "Não autenticado";
-            case 403 -> "Acesso negado";
             case 404 -> "Recurso não encontrado";
             case 405 -> "Método não permitido";
-            case 409 -> "Conflito com o estado atual";
             case 415 -> "Tipo de conteúdo não suportado";
-            case 422 -> "Regra de negócio violada";
             case 500 -> "Erro interno";
             default -> "Erro HTTP " + status;
         };
