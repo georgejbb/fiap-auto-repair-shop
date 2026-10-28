@@ -1,0 +1,26 @@
+# Build
+target/
+build/
+*.class
+*.log
+
+# Maven wrapper baixado em tempo de execução
+.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Segredos e configuração local
+.env
+*.pem
+*.key
