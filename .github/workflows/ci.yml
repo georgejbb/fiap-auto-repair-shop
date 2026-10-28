@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, testes e análise de qualidade
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          # O SonarCloud precisa do histórico completo para atribuir problemas novos ao código alterado.
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Build e testes
+        run: ./mvnw -B verify
+
+      - name: Análise no SonarCloud
+        # PRs de forks não recebem o segredo; nesses casos a análise é pulada.
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar
+
+      - name: Relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+
+  security:
+    name: Análise de vulnerabilidades
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Relatório Trivy do repositório
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: table
+          output: trivy-fs-report.txt
+          exit-code: "0"
+
+      - name: Bloqueio por vulnerabilidade crítica no repositório
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Build da imagem
+        run: docker build -t fiap-auto-repair-shop:${{ github.sha }} .
+
+      - name: Relatório Trivy da imagem
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: fiap-auto-repair-shop:${{ github.sha }}
+          format: table
+          output: trivy-image-report.txt
+          exit-code: "0"
+
+      - name: Bloqueio por vulnerabilidade crítica na imagem
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: fiap-auto-repair-shop:${{ github.sha }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Publicação dos relatórios Trivy
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: trivy-reports
+          path: trivy-*-report.txt
