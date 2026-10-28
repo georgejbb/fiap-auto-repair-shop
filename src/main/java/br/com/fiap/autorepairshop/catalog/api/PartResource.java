@@ -81,11 +81,13 @@ public class PartResource {
     @Schema(description = "Movimentação de estoque")
     public record StockMovementResponse(UUID id, StockMovementType type,
             @Schema(description = "Variação do estoque; negativa quando o saldo diminuiu") int quantity,
-            Instant occurredAt) {
+            Instant occurredAt,
+            @Schema(description = "Ordem de serviço que originou a baixa; ausente em entradas e ajustes")
+            UUID workOrderId) {
 
         static StockMovementResponse from(StockMovement movement) {
             return new StockMovementResponse(movement.id(), movement.type(), movement.quantity(),
-                    movement.occurredAt());
+                    movement.occurredAt(), movement.workOrderId());
         }
     }
 

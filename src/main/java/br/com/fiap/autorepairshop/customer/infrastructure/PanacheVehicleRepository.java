@@ -22,6 +22,11 @@ class PanacheVehicleRepository implements VehicleRepository, PanacheRepositoryBa
     }
 
     @Override
+    public Optional<Vehicle> findIncludingDeleted(UUID id) {
+        return findByIdOptional(id).map(PanacheVehicleRepository::toDomain);
+    }
+
+    @Override
     public Optional<Vehicle> findActiveByLicensePlate(String licensePlate) {
         return find("licensePlate = ?1 and deletedAt is null", licensePlate).firstResultOptional()
                 .map(PanacheVehicleRepository::toDomain);

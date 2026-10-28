@@ -35,4 +35,16 @@ public record Money(BigDecimal amount) {
         }
         return new Money(amount);
     }
+
+    public Money plus(Money other) {
+        return new Money(amount.add(other.amount));
+    }
+
+    /** Valor multiplicado por uma quantidade, como o total de uma linha de peças. */
+    public Money times(int quantity) {
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantidade negativa: " + quantity);
+        }
+        return new Money(amount.multiply(BigDecimal.valueOf(quantity)));
+    }
 }

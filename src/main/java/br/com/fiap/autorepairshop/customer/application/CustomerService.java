@@ -43,6 +43,11 @@ public class CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
     }
 
+    /** Consulta o cliente mesmo que excluído, para referências históricas. */
+    public Customer getIncludingDeleted(UUID id) {
+        return customers.findIncludingDeleted(id).orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
+    }
+
     /** Busca pelo documento informado com ou sem pontuação; devolve uma página com zero ou um cliente. */
     public Page<Customer> findByDocument(String document) {
         List<Customer> found = customers.findActiveByDocument(Document.normalize(document)).stream().toList();

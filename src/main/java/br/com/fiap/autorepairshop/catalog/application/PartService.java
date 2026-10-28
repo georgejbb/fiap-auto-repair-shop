@@ -4,6 +4,7 @@ import br.com.fiap.autorepairshop.catalog.domain.Part;
 import br.com.fiap.autorepairshop.catalog.domain.PartCategory;
 import br.com.fiap.autorepairshop.catalog.domain.PartRepository;
 import br.com.fiap.autorepairshop.catalog.domain.StockMovement;
+import br.com.fiap.autorepairshop.shared.domain.BusinessRuleException;
 import br.com.fiap.autorepairshop.shared.domain.Money;
 import br.com.fiap.autorepairshop.shared.domain.Page;
 import br.com.fiap.autorepairshop.shared.domain.ResourceNotFoundException;
@@ -77,6 +78,21 @@ public class PartService {
         parts.update(part);
         parts.addMovement(movement);
         return part;
+    }
+
+    /**
+     * Baixa o estoque usado por uma ordem de serviço aprovada. Participa da transação de quem chama, para que
+     * a aprovação da OS e a baixa de todos os itens sejam gravadas ou desfeitas juntas.
+     *
+     * @throws BusinessRuleException se o item foi excluído ou se o estoque não cobre a quantidade
+     */
+    @Transactional
+    public void consumeForWorkOrder(UUID partId, int quantity, UUID workOrderId) {
+        Part part = parts.findActiveById(partId).orElseThrow(() -> new BusinessRuleException(
+                "Uma peça ou insumo da ordem de serviço foi excluído do catálogo."));
+        StockMovement movement = part.consume(quantity, workOrderId, now());
+        parts.update(part);
+        parts.addMovement(movement);
     }
 
     public Page<StockMovement> movements(UUID id, int page, int size) {

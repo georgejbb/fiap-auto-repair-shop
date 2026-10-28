@@ -1,5 +1,6 @@
 package br.com.fiap.autorepairshop.catalog.domain;
 
+import br.com.fiap.autorepairshop.shared.domain.BusinessRuleException;
 import br.com.fiap.autorepairshop.shared.domain.InvalidValueException;
 import br.com.fiap.autorepairshop.shared.domain.Money;
 import java.time.Instant;
@@ -74,6 +75,25 @@ public final class Part {
         stockQuantity = countedQuantity;
         updatedAt = now;
         return StockMovement.of(id, StockMovementType.ADJUSTMENT, delta, now);
+    }
+
+    /**
+     * Baixa a quantidade usada por uma ordem de serviço cujo orçamento foi aprovado.
+     *
+     * @throws BusinessRuleException se o estoque atual não cobrir a quantidade
+     */
+    public StockMovement consume(int quantity, UUID workOrderId, Instant now) {
+        if (quantity <= 0) {
+            throw new InvalidValueException("quantity", "deve ser maior que zero");
+        }
+        if (quantity > stockQuantity) {
+            throw new BusinessRuleException("Estoque insuficiente de " + name + ": a ordem de serviço precisa de "
+                    + quantity + " unidade(s) e há " + stockQuantity + " em estoque.");
+        }
+        stockQuantity -= quantity;
+        updatedAt = now;
+        return new StockMovement(UUID.randomUUID(), id, StockMovementType.CONSUMPTION, -quantity, now,
+                Objects.requireNonNull(workOrderId));
     }
 
     public void delete(Instant now) {

@@ -13,6 +13,7 @@ import br.com.fiap.autorepairshop.catalog.domain.PartCategory;
 import br.com.fiap.autorepairshop.catalog.domain.PartRepository;
 import br.com.fiap.autorepairshop.catalog.domain.StockMovement;
 import br.com.fiap.autorepairshop.catalog.domain.StockMovementType;
+import br.com.fiap.autorepairshop.shared.domain.BusinessRuleException;
 import br.com.fiap.autorepairshop.shared.domain.InvalidValueException;
 import br.com.fiap.autorepairshop.shared.domain.Money;
 import br.com.fiap.autorepairshop.shared.domain.Page;
@@ -88,6 +89,33 @@ class PartServiceTest {
         verify(repository).addMovement(movement.capture());
         assertThat(movement.getValue().quantity()).isEqualTo(-3);
         assertThat(part.stockQuantity()).isEqualTo(7);
+    }
+
+    @Test
+    void consumeForWorkOrderUpdatesPartAndRecordsMovement() {
+        Part part = existing();
+        part.registerInbound(5, NOW);
+        UUID workOrder = UUID.randomUUID();
+        when(repository.findActiveById(part.id())).thenReturn(Optional.of(part));
+
+        service.consumeForWorkOrder(part.id(), 2, workOrder);
+
+        assertThat(part.stockQuantity()).isEqualTo(3);
+        ArgumentCaptor<StockMovement> movement = ArgumentCaptor.forClass(StockMovement.class);
+        verify(repository).update(part);
+        verify(repository).addMovement(movement.capture());
+        assertThat(movement.getValue().workOrderId()).isEqualTo(workOrder);
+        assertThat(movement.getValue().type()).isEqualTo(StockMovementType.CONSUMPTION);
+    }
+
+    @Test
+    void consumeForWorkOrderOfDeletedPartIsBusinessRuleViolation() {
+        UUID id = UUID.randomUUID();
+        when(repository.findActiveById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.consumeForWorkOrder(id, 1, UUID.randomUUID()))
+                .isInstanceOf(BusinessRuleException.class);
+        verify(repository, never()).addMovement(any());
     }
 
     @Test

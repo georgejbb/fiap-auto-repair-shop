@@ -68,6 +68,18 @@ class CustomerServiceTest {
     }
 
     @Test
+    void getIncludingDeletedFindsDeletedCustomer() {
+        Customer customer = existing();
+        customer.delete(NOW);
+        when(repository.findIncludingDeleted(customer.id())).thenReturn(Optional.of(customer));
+        UUID unknown = UUID.randomUUID();
+        when(repository.findIncludingDeleted(unknown)).thenReturn(Optional.empty());
+
+        assertThat(service.getIncludingDeleted(customer.id())).isSameAs(customer);
+        assertThatThrownBy(() -> service.getIncludingDeleted(unknown)).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void findByDocumentNormalizesInput() {
         Customer customer = existing();
         when(repository.findActiveByDocument("52998224725")).thenReturn(Optional.of(customer));

@@ -7,5 +7,7 @@ public enum StockMovementType {
     /** Entrada por compra ou reposição. */
     INBOUND,
     /** Correção do saldo após contagem física. */
-    ADJUSTMENT
+    ADJUSTMENT,
+    /** Baixa pela aprovação do orçamento de uma ordem de serviço. */
+    CONSUMPTION
 }
