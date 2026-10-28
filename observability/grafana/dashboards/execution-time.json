@@ -1,0 +1,104 @@
+{
+  "uid": "oficina-execution-time",
+  "title": "Tempo de execução das ordens de serviço",
+  "description": "Tempo entre a aprovação do orçamento (IN_PROGRESS) e a finalização (COMPLETED). OS com orçamento rejeitado não entram no cálculo.",
+  "tags": ["oficina"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "30s",
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Tempo médio de execução",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 6 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "oficina-postgres" },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "none", "graphMode": "none" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT AVG(duration_seconds) AS \"Tempo médio\" FROM work_order_execution_time WHERE $__timeFilter(completed_at)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Ordens de serviço executadas",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 6 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "oficina-postgres" },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "none", "graphMode": "none" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COUNT(*) AS \"OS executadas\" FROM work_order_execution_time WHERE $__timeFilter(completed_at)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Ordens de serviço por status",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 6 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "oficina-postgres" },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+      "options": { "orientation": "horizontal", "showValue": "always", "legend": { "showLegend": false } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"OS\" FROM work_order GROUP BY status ORDER BY CASE status WHEN 'IN_PROGRESS' THEN 1 WHEN 'AWAITING_APPROVAL' THEN 2 WHEN 'IN_DIAGNOSIS' THEN 3 WHEN 'RECEIVED' THEN 4 WHEN 'COMPLETED' THEN 5 ELSE 6 END"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Tempo médio por serviço",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "oficina-postgres" },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 0 }, "overrides": [] },
+      "options": { "orientation": "horizontal", "showValue": "always", "legend": { "showLegend": false } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT service_name AS \"Serviço\", AVG(duration_seconds) AS \"Tempo médio\" FROM work_order_service_execution_time WHERE $__timeFilter(completed_at) GROUP BY service_name ORDER BY 2 DESC"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Evolução diária do tempo médio",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "oficina-postgres" },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 0, "custom": { "drawStyle": "line", "pointSize": 6, "showPoints": "always" } }, "overrides": [] },
+      "options": { "legend": { "showLegend": false } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', completed_at) AS time, AVG(duration_seconds) AS \"Tempo médio\" FROM work_order_execution_time WHERE $__timeFilter(completed_at) GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    }
+  ]
+}
