@@ -9,6 +9,8 @@ import static org.hamcrest.Matchers.startsWith;
 
 import br.com.fiap.autorepairshop.shared.api.Problem;
 import br.com.fiap.autorepairshop.support.TestTokens;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
@@ -39,12 +41,10 @@ class AuthenticationTest {
     }
 
     @Test
-    void tokenExpiresOneHourAfterIssue() {
-        String payload = payload(login("admin", "admin123"));
+    void tokenExpiresOneHourAfterIssue() throws Exception {
+        JsonNode claims = new ObjectMapper().readTree(payload(login("admin", "admin123")));
 
-        long iat = Long.parseLong(payload.replaceAll(".*\"iat\":(\\d+).*", "$1"));
-        long exp = Long.parseLong(payload.replaceAll(".*\"exp\":(\\d+).*", "$1"));
-        assertThat(exp - iat).isEqualTo(3600);
+        assertThat(claims.get("exp").asLong() - claims.get("iat").asLong()).isEqualTo(3600);
     }
 
     @Test
