@@ -33,6 +33,17 @@ class ApiDocumentationTest {
     }
 
     @Test
+    void declaresBearerJwtSecurityScheme() {
+        given()
+                .queryParam("format", "json")
+                .when().get("/q/openapi")
+                .then()
+                .statusCode(200)
+                .body("components.securitySchemes.bearerAuth.scheme", equalTo("bearer"))
+                .body("components.securitySchemes.bearerAuth.bearerFormat", equalTo("JWT"));
+    }
+
+    @Test
     void swaggerUiIsServed() {
         given()
                 .when().get("/q/swagger-ui/")
