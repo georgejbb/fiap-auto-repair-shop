@@ -8,10 +8,12 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.DataException;
 
 /**
  * Converte em 409 os conflitos detectados pelo banco: escrita concorrente no mesmo registro e violação de
- * restrição única que escapou da verificação prévia por corrida. Demais falhas de persistência viram 500.
+ * restrição única que escapou da verificação prévia por corrida. Valor que o banco recusa, como texto com
+ * caractere nulo, vira 400. Demais falhas de persistência viram 500.
  */
 @Provider
 public class PersistenceExceptionMapper implements ExceptionMapper<PersistenceException> {
@@ -26,16 +28,20 @@ public class PersistenceExceptionMapper implements ExceptionMapper<PersistenceEx
             return Problem.of(409, "O registro foi alterado por outra operação. Consulte-o novamente e repita a operação.",
                     instance).toResponse();
         }
-        if (hasConstraintViolation(exception)) {
+        if (hasCause(exception, ConstraintViolationException.class)) {
             return Problem.of(409, "A operação viola uma restrição de unicidade ou integridade dos dados.", instance)
+                    .toResponse();
+        }
+        if (hasCause(exception, DataException.class)) {
+            return Problem.of(400, "Os dados enviados contêm um valor que não pode ser gravado.", instance)
                     .toResponse();
         }
         return UnexpectedExceptionMapper.internalError(exception, instance);
     }
 
-    private static boolean hasConstraintViolation(Throwable exception) {
+    private static boolean hasCause(Throwable exception, Class<? extends Throwable> type) {
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
-            if (cause instanceof ConstraintViolationException) {
+            if (type.isInstance(cause)) {
                 return true;
             }
         }
