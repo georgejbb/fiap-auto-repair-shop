@@ -27,7 +27,7 @@ O quadro do Miro é a fonte da documentação DDD. Os PDFs em `docs/ddd/` são c
 | Mapa de contexto, agregados, C4 níveis 1 a 3, relação com o código, linguagem ubíqua e diagrama de sequência | [docs/ddd/diagramas.pdf](docs/ddd/diagramas.pdf) |
 | Glossário completo, com os termos a evitar e onde cada um aparece no código | [docs/ddd/linguagem-ubiqua.md](docs/ddd/linguagem-ubiqua.md) |
 | Decisões de arquitetura (ADR) | [docs/adr/](docs/adr/README.md) |
-| Relatório de vulnerabilidades | [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md) |
+| Relatório de vulnerabilidades (SonarCloud, Trivy, OWASP ZAP e OWASP Top 10) | [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md) |
 | Relatório de cobertura dos testes | [docs/relatorios/cobertura.md](docs/relatorios/cobertura.md) |
 | Coleção do Postman com o fluxo completo da OS | [docs/api/](docs/api/fiap-auto-repair-shop.postman_collection.json) |
 | Vídeo da apresentação | a preencher com o link do YouTube |
@@ -221,7 +221,7 @@ O workflow [ci.yml](.github/workflows/ci.yml) roda em cada pull request e em cad
 - análise de qualidade e segurança de código no SonarCloud;
 - varredura de vulnerabilidades do repositório e da imagem com Trivy.
 
-O resultado da análise de vulnerabilidades da versão entregue está em [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md).
+O resultado da análise de vulnerabilidades da versão entregue está em [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md): SonarCloud, Trivy, uma varredura da API com o OWASP ZAP e a situação de cada item do OWASP Top 10.
 
 ## Estrutura de diretórios
 
