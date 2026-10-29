@@ -8,6 +8,27 @@ Projeto do Tech Challenge da Fase 1 da pós-graduação FIAP SOAT (Software Arch
 
 Organizar o atendimento da oficina, do recebimento do veículo à entrega, com acompanhamento do status pelo cliente, orçamento gerado a partir dos serviços e peças, autorização do cliente e controle de estoque.
 
+## Solução
+
+API REST com duas áreas:
+- **Administrativa** (`/api/admin`, com token JWT): cadastro de clientes, veículos, serviços, peças e insumos; controle de estoque; abertura e condução da ordem de serviço (OS) do diagnóstico à entrega; listagem por prioridade e tempo médio de execução.
+- **Pública** (`/api/public`, sem login): o cliente consulta a OS e aprova ou rejeita o orçamento com o código da OS e o seu CPF ou CNPJ.
+
+Ao concluir o diagnóstico, o sistema calcula o orçamento e envia por e-mail o valor e o código da OS. A aprovação do cliente baixa o estoque das peças e insumos na mesma transação que muda o status da OS. O tempo de execução de cada OS alimenta a API de métricas e um painel no Grafana.
+
+## Documentação
+
+| Documento | Local |
+|---|---|
+| Documentação DDD no Miro (Event Storming, mapa de contexto, agregados, C4 e diagrama de sequência) | a preencher com o link público do quadro |
+| Exportação da documentação DDD | [docs/ddd/](docs/ddd/) |
+| Linguagem ubíqua e relação com o código | [docs/ddd/linguagem-ubiqua.md](docs/ddd/linguagem-ubiqua.md) |
+| Decisões arquiteturais (ADR) | [docs/adr/](docs/adr/README.md) |
+| Relatório de vulnerabilidades | [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md) |
+| Relatório de cobertura de testes | [docs/relatorios/cobertura.md](docs/relatorios/cobertura.md) |
+| Coleção Postman com o fluxo completo | [docs/api/](docs/api/fiap-auto-repair-shop.postman_collection.json) |
+| Vídeo de apresentação | a preencher com o link do YouTube |
+
 ## Arquitetura
 
 Monolito em camadas organizado por bounded context, seguindo Domain-Driven Design. Cada contexto (`workorder`, `customer`, `catalog`, `identity`) é um pacote com as camadas `api`, `application`, `domain` e `infrastructure`; a camada de domínio não depende de framework. Decisão detalhada na [ADR-0002](docs/adr/0002-monolito-em-camadas-por-contexto.md).
@@ -90,7 +111,6 @@ No Swagger UI, use o botão **Authorize** e informe o token obtido em `POST /api
 | Serviços | `POST`, `GET`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/service-offerings` | Preço com até duas casas decimais |
 | Peças e insumos | `POST`, `GET` (filtro `category`), `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/api/admin/parts` | Estoque inicial zero |
 | Estoque | `POST /api/admin/parts/{id}/stock-entries`, `POST /api/admin/parts/{id}/stock-adjustments`, `GET /api/admin/parts/{id}/movements` | Estoque nunca negativo |
-
 | Ordens de serviço | `POST /api/admin/work-orders`, `GET /api/admin/work-orders` (filtros `status`, repetível, e `customerId`), `GET /api/admin/work-orders/{código}` | Abertura, listagem por prioridade e detalhamento |
 | Tempo de execução | `GET /api/admin/work-orders/metrics/execution-time` (filtros `from` e `to`, ISO-8601) | Média geral e por serviço |
 | Itens da OS | `POST` e `DELETE` em `/api/admin/work-orders/{código}/services` e `/parts` | Somente durante o diagnóstico |
@@ -135,6 +155,12 @@ Fluxo de ponta a ponta, na ordem de uso:
 8. `POST /api/admin/work-orders/{código}/finish` e `POST /api/admin/work-orders/{código}/deliver`.
 
 O documento do cliente vai no cabeçalho `X-Customer-Document`, nunca na URL. Código inexistente e documento de outra pessoa recebem a mesma resposta 404.
+
+A coleção [docs/api/fiap-auto-repair-shop.postman_collection.json](docs/api/fiap-auto-repair-shop.postman_collection.json) executa esse fluxo com testes em cada requisição. Ela gera um CPF e uma placa novos a cada execução e pode ser importada no Postman ou executada com o ambiente no ar:
+
+```bash
+npx newman run docs/api/fiap-auto-repair-shop.postman_collection.json
+```
 
 ## E-mail do orçamento
 
@@ -182,7 +208,7 @@ Erros da API seguem o formato Problem Details (RFC 9457), com `Content-Type: app
 ./mvnw verify
 ```
 
-No Windows, use `mvnw.cmd verify`. O comando executa os testes unitários e de integração e gera o relatório de cobertura em `target/jacoco-report/index.html`. O build falha se a cobertura de linhas ou de ramificações das camadas `domain` e `application` ficar abaixo de 80%.
+No Windows, use `mvnw.cmd verify`. O comando executa os testes unitários e de integração e gera o relatório de cobertura em `target/jacoco-report/index.html`. O build falha se a cobertura de linhas ou de ramificações das camadas `domain` e `application` ficar abaixo de 80%. A cobertura da versão entregue está em [docs/relatorios/cobertura.md](docs/relatorios/cobertura.md).
 
 ## Integração contínua
 
@@ -192,12 +218,18 @@ O workflow [ci.yml](.github/workflows/ci.yml) roda em cada pull request e em cad
 - análise de qualidade e segurança de código no SonarCloud;
 - varredura de vulnerabilidades do repositório e da imagem com Trivy.
 
+O resultado da análise de vulnerabilidades da versão entregue está em [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md).
+
 ## Estrutura de diretórios
 
 ```
 .
 ├── .github/workflows/      pipeline de CI
-├── docs/adr/               decisões arquiteturais
+├── docs/
+│   ├── adr/                decisões arquiteturais
+│   ├── ddd/                documentação DDD exportada e linguagem ubíqua
+│   ├── relatorios/         vulnerabilidades e cobertura
+│   └── api/                coleção Postman
 ├── src/main/java/br/com/fiap/autorepairshop/
 │   ├── workorder/          contexto Ordem de Serviço
 │   ├── customer/           contexto Cadastro (clientes e veículos)
