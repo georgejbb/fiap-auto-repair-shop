@@ -6,12 +6,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-/**
- * Filtros da listagem de ordens de serviço.
- *
- * @param statuses   status aceitos; vazio para todos
- * @param customerId cliente das OS; nulo para todos
- */
 public record WorkOrderFilter(List<WorkOrderStatus> statuses, UUID customerId) {
 
     public WorkOrderFilter {

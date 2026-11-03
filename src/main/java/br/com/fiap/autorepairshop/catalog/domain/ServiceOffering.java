@@ -6,9 +6,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Serviço de mão de obra oferecido pela oficina, com o preço usado no orçamento.
- */
 public final class ServiceOffering {
 
     private final UUID id;

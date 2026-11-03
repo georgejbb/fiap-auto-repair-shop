@@ -13,7 +13,7 @@ Data: 29/10/2026. Versão: branch `docs/ddd-exports`, criada a partir do commit 
 | Camadas `domain` e `application` (critério do build) | 99,8% (665 de 666) | 97,7% (168 de 172) |
 | Projeto inteiro | 99,0% (1.201 de 1.213) | 97,4% (263 de 270) |
 
-O SonarCloud calcula 99,3% na análise da `main`, com 99,8% das linhas e 97,4% das ramificações. A diferença em relação ao JaCoCo local vem das exclusões configuradas no Sonar (`package-info.java`) e da forma como ele combina linhas e ramificações num único indicador.
+O SonarCloud calcula 99,3% na análise da `main`, com 99,8% das linhas e 97,4% das ramificações. A diferença em relação ao JaCoCo local vem da forma como o Sonar combina linhas e ramificações num único indicador.
 
 ## Por contexto e camada
 

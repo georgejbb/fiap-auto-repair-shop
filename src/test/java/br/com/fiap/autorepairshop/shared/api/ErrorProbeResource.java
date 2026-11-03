@@ -9,9 +9,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 
-/**
- * Recurso disponível apenas nos testes para provocar erros de validação e falhas inesperadas.
- */
 @Path("/test-support/errors")
 public class ErrorProbeResource {
 

@@ -5,11 +5,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 
 /**
- * Período de conclusão das ordens de serviço consideradas no tempo médio. Os dois limites são opcionais e
- * inclusivos.
- *
- * @param from início; nulo para sem limite
- * @param to   fim; nulo para sem limite
+ * Período de conclusão das OS consideradas no tempo médio. Os dois limites são opcionais e inclusivos.
  */
 public record ExecutionPeriod(Instant from, Instant to) {
 

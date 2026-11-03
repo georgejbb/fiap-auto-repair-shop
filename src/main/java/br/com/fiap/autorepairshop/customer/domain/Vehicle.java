@@ -6,9 +6,6 @@ import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Veículo atendido pela oficina, vinculado a um cliente. A placa identifica o veículo e não muda.
- */
 public final class Vehicle {
 
     static final int FIRST_ACCEPTED_YEAR = 1900;

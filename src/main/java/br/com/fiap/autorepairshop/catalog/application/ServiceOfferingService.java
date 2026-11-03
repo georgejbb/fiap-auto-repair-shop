@@ -12,9 +12,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Casos de uso do catálogo de serviços.
- */
 @ApplicationScoped
 public class ServiceOfferingService {
 

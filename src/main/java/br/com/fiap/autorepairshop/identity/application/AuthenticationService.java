@@ -7,16 +7,11 @@ import io.quarkus.security.AuthenticationFailedException;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 
-/**
- * Autentica usuários administrativos e emite o token de acesso.
- */
 @ApplicationScoped
 public class AuthenticationService {
 
-    /**
-     * Hash usado quando o login não existe, para que a verificação bcrypt aconteça em todos os casos
-     * e o tempo de resposta não indique quais logins estão cadastrados.
-     */
+    // Hash usado quando o login não existe, para que a verificação bcrypt aconteça em todos os casos e o tempo
+    // de resposta não indique quais logins estão cadastrados.
     private static final String DUMMY_HASH = BcryptUtil.bcryptHash("senha-inexistente", PasswordPolicy.BCRYPT_COST);
 
     private final AdminUserRepository users;

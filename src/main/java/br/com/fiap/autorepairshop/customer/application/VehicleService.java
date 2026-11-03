@@ -15,9 +15,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Casos de uso do cadastro de veículos.
- */
 @ApplicationScoped
 public class VehicleService {
 
@@ -48,12 +45,10 @@ public class VehicleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado."));
     }
 
-    /** Consulta o veículo mesmo que excluído, para referências históricas. */
     public Vehicle getIncludingDeleted(UUID id) {
         return vehicles.findIncludingDeleted(id).orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado."));
     }
 
-    /** Busca pela placa informada com ou sem hífen; devolve uma página com zero ou um veículo. */
     public Page<Vehicle> findByLicensePlate(String licensePlate) {
         List<Vehicle> found = vehicles.findActiveByLicensePlate(LicensePlate.normalize(licensePlate)).stream().toList();
         return new Page<>(found, found.size());

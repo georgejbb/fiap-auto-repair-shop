@@ -3,11 +3,6 @@ package br.com.fiap.autorepairshop.shared.domain;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Valor monetário em reais, com duas casas decimais e nunca negativo.
- *
- * @param amount valor com escala 2
- */
 public record Money(BigDecimal amount) {
 
     public static final Money ZERO = new Money(BigDecimal.ZERO);
@@ -40,7 +35,6 @@ public record Money(BigDecimal amount) {
         return new Money(amount.add(other.amount));
     }
 
-    /** Valor multiplicado por uma quantidade, como o total de uma linha de peças. */
     public Money times(int quantity) {
         if (quantity < 0) {
             throw new IllegalArgumentException("Quantidade negativa: " + quantity);

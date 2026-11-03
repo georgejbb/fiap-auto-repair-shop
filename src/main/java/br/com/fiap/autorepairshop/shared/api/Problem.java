@@ -5,16 +5,6 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-/**
- * Corpo de resposta de erro no formato Problem Details (RFC 9457).
- *
- * @param type     URI que identifica o tipo do problema; {@code about:blank} quando o status HTTP basta
- * @param title    resumo do tipo de problema
- * @param status   código de status HTTP
- * @param detail   explicação específica desta ocorrência
- * @param instance caminho da requisição que originou o problema
- * @param errors   violações de validação, presentes apenas em erros 400 de validação
- */
 @Schema(name = "Problem", description = "Resposta de erro no formato Problem Details (RFC 9457)")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Problem(String type, String title, int status, String detail, String instance, List<FieldError> errors) {
@@ -23,12 +13,6 @@ public record Problem(String type, String title, int status, String detail, Stri
 
     private static final String DEFAULT_TYPE = "about:blank";
 
-    /**
-     * Violação de validação de um campo da requisição.
-     *
-     * @param field   nome do campo
-     * @param message mensagem da violação
-     */
     @Schema(name = "FieldError", description = "Violação de validação de um campo")
     public record FieldError(String field, String message) {
     }

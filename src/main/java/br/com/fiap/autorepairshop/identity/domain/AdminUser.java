@@ -4,9 +4,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Usuário com acesso às APIs administrativas. Guarda apenas o hash da senha.
- */
 public final class AdminUser {
 
     public static final String ADMIN_ROLE = "ADMIN";

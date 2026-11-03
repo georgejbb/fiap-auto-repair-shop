@@ -46,10 +46,8 @@ class PanachePartRepository implements PartRepository, PanacheRepositoryBase<Par
         persistAndFlush(entity);
     }
 
-    /**
-     * A entidade já está no contexto de persistência desde a leitura feita na mesma transação; a coluna
-     * {@code version} faz o flush falhar se outra transação gravou o item depois dessa leitura.
-     */
+    // A entidade já está no contexto de persistência desde a leitura feita na mesma transação; a coluna version
+    // faz o flush falhar se outra transação gravou o item depois dessa leitura.
     @Override
     public void update(Part part) {
         copy(part, findById(part.id()));

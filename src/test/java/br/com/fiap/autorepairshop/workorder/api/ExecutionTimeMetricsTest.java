@@ -24,11 +24,9 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
 
-/**
- * As OS deste teste são concluídas num intervalo de quatro dias sorteado entre 2000 e 2019 e consultadas por
- * esse intervalo, o que as isola das OS criadas pelos demais testes com a data atual e de execuções anteriores
- * que permaneçam no banco de teste.
- */
+// As OS deste teste são concluídas num intervalo de quatro dias sorteado entre 2000 e 2019 e consultadas por
+// esse intervalo, o que as isola das OS criadas pelos demais testes com a data atual e de execuções anteriores
+// que permaneçam no banco de teste.
 @QuarkusTest
 class ExecutionTimeMetricsTest {
 

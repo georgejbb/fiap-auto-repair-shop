@@ -4,14 +4,10 @@ import br.com.fiap.autorepairshop.shared.domain.Page;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Persistência de peças, insumos e movimentações de estoque. Consultas retornam apenas itens ativos.
- */
 public interface PartRepository {
 
     Optional<Part> findActiveById(UUID id);
 
-    /** Lista os itens ativos, filtrando pela categoria quando informada. */
     Page<Part> listActive(PartCategory category, int page, int size);
 
     void add(Part part);

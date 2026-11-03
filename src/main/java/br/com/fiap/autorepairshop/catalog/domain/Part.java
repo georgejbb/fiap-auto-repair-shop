@@ -47,7 +47,6 @@ public final class Part {
                 null);
     }
 
-    /** Altera os dados cadastrais; o estoque não é alterado por este caminho. */
     public void update(String name, PartCategory category, Money unitPrice, Instant now) {
         requireName(name);
         requireCategory(category);
@@ -66,7 +65,6 @@ public final class Part {
         return StockMovement.of(id, StockMovementType.INBOUND, quantity, now);
     }
 
-    /** Fixa o saldo na quantidade contada e registra a diferença em relação ao saldo anterior. */
     public StockMovement adjustTo(int countedQuantity, Instant now) {
         if (countedQuantity < 0) {
             throw new InvalidValueException("countedQuantity", "deve ser maior ou igual a zero");
@@ -77,11 +75,6 @@ public final class Part {
         return StockMovement.of(id, StockMovementType.ADJUSTMENT, delta, now);
     }
 
-    /**
-     * Baixa a quantidade usada por uma ordem de serviço cujo orçamento foi aprovado.
-     *
-     * @throws BusinessRuleException se o estoque atual não cobrir a quantidade
-     */
     public StockMovement consume(int quantity, UUID workOrderId, Instant now) {
         if (quantity <= 0) {
             throw new InvalidValueException("quantity", "deve ser maior que zero");

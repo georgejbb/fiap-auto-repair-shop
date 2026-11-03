@@ -1,8 +1,5 @@
 package br.com.fiap.autorepairshop.shared.domain;
 
-/**
- * Valor rejeitado por um objeto de valor ou agregado, associado ao campo de entrada que o originou.
- */
 public class InvalidValueException extends DomainException {
 
     private final String field;

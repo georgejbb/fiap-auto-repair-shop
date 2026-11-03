@@ -26,11 +26,9 @@ import java.util.UUID;
 @ApplicationScoped
 class SqlWorkOrderQueries implements WorkOrderQueries {
 
-    /**
-     * Ordena por prioridade de atendimento: em execução termina primeiro; aguardando aprovação depende do
-     * cliente; finalizadas e entregues por último. Dentro do status, a aberta há mais tempo primeiro.
-     * As consultas são texto fixo: filtros ausentes viram parâmetros que aceitam todos os valores.
-     */
+    // Ordena por prioridade de atendimento: em execução termina primeiro; aguardando aprovação depende do
+    // cliente; finalizadas e entregues por último. Dentro do status, a aberta há mais tempo primeiro. As
+    // consultas são texto fixo: filtros ausentes viram parâmetros que aceitam todos os valores.
     private static final String LIST = """
             SELECT wo.id, wo.status, c.name, v.license_plate, wo.estimate_total, wo.opened_at
             FROM work_order wo
@@ -67,11 +65,11 @@ class SqlWorkOrderQueries implements WorkOrderQueries {
             GROUP BY service_offering_id
             ORDER BY MAX(service_name), service_offering_id""";
 
-    /** Limites usados quando o período não é informado; abrangem qualquer data gravada pela aplicação. */
+    // Limites usados quando o período não é informado; abrangem qualquer data gravada pela aplicação.
     private static final Instant EARLIEST = Instant.parse("1900-01-01T00:00:00Z");
     private static final Instant LATEST = Instant.parse("9999-12-31T23:59:59Z");
 
-    /** Valor do parâmetro de cliente quando o filtro não é usado; a condição allCustomers o torna irrelevante. */
+    // Valor do parâmetro de cliente quando o filtro não é usado; a condição allCustomers o torna irrelevante.
     private static final UUID ANY_CUSTOMER = new UUID(0, 0);
 
     private final EntityManager entityManager;
@@ -137,7 +135,7 @@ class SqlWorkOrderQueries implements WorkOrderQueries {
         return Math.round(((Number) average).doubleValue());
     }
 
-    /** O driver pode devolver o timestamp com fuso em tipos diferentes conforme a versão. */
+    // O driver pode devolver o timestamp com fuso em tipos diferentes conforme a versão.
     static Instant instant(Object value) {
         return switch (value) {
             case Instant instant -> instant;

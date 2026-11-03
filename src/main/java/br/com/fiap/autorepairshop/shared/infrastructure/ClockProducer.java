@@ -4,9 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import java.time.Clock;
 
-/**
- * Relógio da aplicação. Injetado onde o domínio depende da data atual, para que os testes fixem o instante.
- */
+// Relógio da aplicação. Injetado onde o domínio depende da data atual, para que os testes fixem o instante.
 @ApplicationScoped
 public class ClockProducer {
 

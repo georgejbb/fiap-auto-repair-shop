@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-/**
- * Ordem de serviço detalhada, como vista pela equipe da oficina.
- */
 @Schema(description = "Ordem de serviço detalhada")
 public record WorkOrderResponse(
         @Schema(description = "Código da OS, informado ao cliente") UUID code,
