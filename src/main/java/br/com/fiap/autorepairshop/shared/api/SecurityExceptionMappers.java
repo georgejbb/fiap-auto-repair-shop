@@ -8,9 +8,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
-/**
- * Respostas Problem Details para falhas de autenticação e autorização das rotas administrativas.
- */
 public class SecurityExceptionMappers {
 
     @ServerExceptionMapper

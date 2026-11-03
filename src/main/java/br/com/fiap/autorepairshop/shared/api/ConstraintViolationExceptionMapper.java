@@ -11,9 +11,6 @@ import jakarta.ws.rs.ext.Provider;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Converte falhas de Bean Validation em resposta 400 com uma entrada por campo violado.
- */
 @Provider
 public class ConstraintViolationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
 
@@ -30,10 +27,8 @@ public class ConstraintViolationExceptionMapper implements ExceptionMapper<Const
                 .toResponse();
     }
 
-    /**
-     * O caminho da violação inclui o método e o parâmetro (por exemplo {@code create.request.name});
-     * para o cliente da API interessa apenas o último nó, que é o campo do corpo ou o parâmetro.
-     */
+    // O caminho da violação inclui o método e o parâmetro (por exemplo create.request.name); para o cliente da
+    // API interessa apenas o último nó, que é o campo do corpo ou o parâmetro.
     static String fieldName(ConstraintViolation<?> violation) {
         String field = null;
         for (Path.Node node : violation.getPropertyPath()) {

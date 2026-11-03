@@ -7,12 +7,9 @@ import java.util.regex.Pattern;
 /**
  * CPF ou CNPJ do cliente, normalizado e com dígitos verificadores válidos.
  *
- * <p>O CNPJ aceita os 12 primeiros caracteres alfanuméricos (formato em vigor desde julho de 2026) e os
- * 2 dígitos verificadores numéricos. O cálculo é o mesmo do CNPJ numérico: cada caractere vale seu código
- * ASCII menos 48, o que dá aos dígitos os valores de 0 a 9 e às letras os valores de 17 a 42.
- *
- * @param type   tipo do documento
- * @param number documento sem pontuação, com letras em maiúsculas
+ * <p>O CNPJ aceita os 12 primeiros caracteres alfanuméricos (formato em vigor desde julho de 2026) e os 2
+ * dígitos verificadores numéricos. O cálculo é o mesmo do CNPJ numérico: cada caractere vale seu código ASCII
+ * menos 48, o que dá aos dígitos os valores de 0 a 9 e às letras os valores de 17 a 42.
  */
 public record Document(DocumentType type, String number) {
 
@@ -24,11 +21,6 @@ public record Document(DocumentType type, String number) {
     private static final int[] CNPJ_FIRST_WEIGHTS = {5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
     private static final int[] CNPJ_SECOND_WEIGHTS = {6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
 
-    /**
-     * Valida e normaliza um documento informado com ou sem pontuação.
-     *
-     * @throws InvalidValueException se não for um CPF ou CNPJ válido
-     */
     public static Document of(String raw) {
         if (raw == null || raw.isBlank()) {
             throw new InvalidValueException(FIELD, "é obrigatório");
@@ -43,7 +35,6 @@ public record Document(DocumentType type, String number) {
         throw new InvalidValueException(FIELD, "não é um CPF ou CNPJ válido");
     }
 
-    /** Remove pontuação e espaços e converte letras para maiúsculas, sem validar. */
     public static String normalize(String raw) {
         return FORMATTING.matcher(raw).replaceAll("").toUpperCase(Locale.ROOT);
     }
@@ -68,7 +59,6 @@ public record Document(DocumentType type, String number) {
         return values[12] == first && values[13] == second;
     }
 
-    /** Pesos decrescentes a partir de {@code firstWeight}, aplicados às primeiras {@code length} posições. */
     private static int checkDigit(int[] values, int length, int firstWeight) {
         int[] weights = new int[length];
         for (int i = 0; i < length; i++) {

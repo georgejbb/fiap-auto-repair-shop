@@ -36,11 +36,9 @@ class PanacheWorkOrderRepository implements WorkOrderRepository, PanacheReposito
         persistAndFlush(entity);
     }
 
-    /**
-     * Sincroniza a entidade carregada na mesma transação com o agregado. As linhas são atualizadas por id,
-     * em vez de recriadas, para não remover e inserir a mesma chave no mesmo flush. A coluna version faz o
-     * flush falhar se outra transação alterou a OS depois da leitura.
-     */
+    // Sincroniza a entidade carregada na mesma transação com o agregado. As linhas são atualizadas por id, em
+    // vez de recriadas, para não remover e inserir a mesma chave no mesmo flush. A coluna version faz o flush
+    // falhar se outra transação alterou a OS depois da leitura.
     @Override
     public void update(WorkOrder workOrder) {
         copy(workOrder, findById(workOrder.id()));
@@ -93,7 +91,7 @@ class PanacheWorkOrderRepository implements WorkOrderRepository, PanacheReposito
         }
     }
 
-    /** O histórico só cresce: grava apenas as mudanças posteriores às já persistidas. */
+    // O histórico só cresce: grava apenas as mudanças posteriores às já persistidas.
     private static void appendStatusChanges(List<StatusChange> history, List<StatusChangeEntity> entities) {
         for (int position = entities.size(); position < history.size(); position++) {
             StatusChange change = history.get(position);

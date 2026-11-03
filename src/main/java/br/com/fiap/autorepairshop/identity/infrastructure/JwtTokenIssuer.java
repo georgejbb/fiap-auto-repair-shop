@@ -8,9 +8,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Set;
 
-/**
- * Emite JWT assinado com RS256. O emissor e a chave de assinatura vêm da configuração.
- */
 @ApplicationScoped
 class JwtTokenIssuer implements TokenIssuer {
 

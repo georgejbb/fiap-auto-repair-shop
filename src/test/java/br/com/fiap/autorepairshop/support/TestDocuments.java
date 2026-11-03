@@ -2,10 +2,8 @@ package br.com.fiap.autorepairshop.support;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Gera CPF, CNPJ e placas válidos e distintos, para que os testes de integração não colidam nas
- * restrições de unicidade do banco compartilhado entre os testes.
- */
+// Gera CPF, CNPJ e placas válidos e distintos, para que os testes de integração não colidam nas restrições de
+// unicidade do banco compartilhado entre os testes.
 public final class TestDocuments {
 
     private static final String ALPHANUMERIC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -41,12 +39,10 @@ public final class TestDocuments {
         return withCnpjDigits(base.toString());
     }
 
-    /** Placa no padrão Mercosul (AAA9A99). */
     public static String mercosulPlate() {
         return "" + letter() + letter() + letter() + random(10) + letter() + random(10) + random(10);
     }
 
-    /** Placa no padrão antigo (AAA9999). */
     public static String oldPlate() {
         return "" + letter() + letter() + letter() + random(10) + random(10) + random(10) + random(10);
     }

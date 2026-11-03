@@ -101,7 +101,7 @@ class WorkOrderListingTest {
         given().when().get(PATH).then().statusCode(401);
     }
 
-    /** Grava uma OS com abertura controlada; steps: 0 recebida, 2 aguardando aprovação, 3 em execução. */
+    // Grava uma OS com abertura controlada; steps: 0 recebida, 2 aguardando aprovação, 3 em execução.
     private UUID store(Instant openedAt, int steps) {
         WorkOrder workOrder = WorkOrder.open(UUID.fromString(owner.customerId()), UUID.fromString(owner.vehicleId()),
                 openedAt);

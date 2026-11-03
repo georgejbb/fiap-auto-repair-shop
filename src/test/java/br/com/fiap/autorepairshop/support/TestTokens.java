@@ -6,9 +6,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Set;
 
-/**
- * Tokens para os testes de integração, assinados com a chave gerada pelo Quarkus no perfil de teste.
- */
 public final class TestTokens {
 
     private TestTokens() {

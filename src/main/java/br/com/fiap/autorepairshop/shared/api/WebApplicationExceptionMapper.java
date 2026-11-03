@@ -7,10 +7,6 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
-/**
- * Converte erros HTTP lançados pelo framework (rota inexistente, método não permitido, corpo ilegível)
- * em Problem Details, preservando o status original.
- */
 @Provider
 public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplicationException> {
 

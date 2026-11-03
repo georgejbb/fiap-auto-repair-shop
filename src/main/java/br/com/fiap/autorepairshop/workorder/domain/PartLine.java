@@ -6,12 +6,6 @@ import java.util.UUID;
 
 /**
  * Peça ou insumo incluído na OS, com nome e preço unitário copiados do catálogo no momento da inclusão.
- *
- * @param id        identificador da linha
- * @param partId    peça ou insumo do catálogo
- * @param name      nome do item na inclusão
- * @param unitPrice preço unitário na inclusão
- * @param quantity  quantidade, sempre maior que zero
  */
 public record PartLine(UUID id, UUID partId, String name, Money unitPrice, int quantity) {
 

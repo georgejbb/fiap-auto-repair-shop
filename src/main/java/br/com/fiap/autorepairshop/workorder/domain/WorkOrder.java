@@ -107,7 +107,6 @@ public final class WorkOrder {
         }
     }
 
-    /** Gera o orçamento com o total dos itens e coloca a OS aguardando a decisão do cliente. */
     public Estimate completeDiagnosis(Instant now) {
         requireStatus(WorkOrderStatus.IN_DIAGNOSIS, "concluir o diagnóstico");
         if (serviceLines.isEmpty() && partLines.isEmpty()) {
@@ -132,7 +131,6 @@ public final class WorkOrder {
         moveTo(WorkOrderStatus.IN_PROGRESS, now);
     }
 
-    /** Registra a rejeição e encerra a OS sem execução. */
     public void reject(Instant now) {
         requireStatus(WorkOrderStatus.AWAITING_APPROVAL, "rejeitar o orçamento");
         estimate = estimate.decide(EstimateDecision.REJECTED, now);

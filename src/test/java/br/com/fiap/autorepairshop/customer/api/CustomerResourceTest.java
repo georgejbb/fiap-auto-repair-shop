@@ -130,6 +130,14 @@ class CustomerResourceTest {
     }
 
     @Test
+    void searchWithNullCharacterReturns400() {
+        admin().queryParam("document", "\u0000").when().get(PATH)
+                .then()
+                .statusCode(400)
+                .body("detail", equalTo("Os dados enviados contêm um valor que não pode ser gravado."));
+    }
+
+    @Test
     void requiresAdminToken() {
         given().contentType(ContentType.JSON).body(customer(TestDocuments.cpf()))
                 .when().post(PATH).then().statusCode(401);

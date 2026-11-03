@@ -13,9 +13,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Casos de uso do cadastro de clientes.
- */
 @ApplicationScoped
 public class CustomerService {
 
@@ -43,12 +40,10 @@ public class CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
     }
 
-    /** Consulta o cliente mesmo que excluído, para referências históricas. */
     public Customer getIncludingDeleted(UUID id) {
         return customers.findIncludingDeleted(id).orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
     }
 
-    /** Busca pelo documento informado com ou sem pontuação; devolve uma página com zero ou um cliente. */
     public Page<Customer> findByDocument(String document) {
         List<Customer> found = customers.findActiveByDocument(Document.normalize(document)).stream().toList();
         return new Page<>(found, found.size());

@@ -5,9 +5,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Cliente da oficina. O documento identifica o cliente e não muda depois do cadastro.
- */
 public final class Customer {
 
     private final UUID id;
@@ -47,7 +44,6 @@ public final class Customer {
         this.updatedAt = now;
     }
 
-    /** Exclusão lógica: o cliente deixa de ser ativo, mas continua referenciado pelas ordens de serviço. */
     public void delete(Instant now) {
         this.deletedAt = now;
         this.updatedAt = now;

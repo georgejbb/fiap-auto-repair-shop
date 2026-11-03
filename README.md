@@ -18,16 +18,19 @@ Ao concluir o diagnóstico, o sistema calcula o orçamento e envia por e-mail o 
 
 ## Documentação
 
-| Documento | Local |
+O quadro do Miro é a fonte da documentação DDD. Os PDFs em `docs/ddd/` são cópias dele, para consulta sem sair do repositório.
+
+| Documento | Onde está |
 |---|---|
-| Documentação DDD no Miro (Event Storming, mapa de contexto, agregados, C4 e diagrama de sequência) | a preencher com o link público do quadro |
-| Exportação da documentação DDD | [docs/ddd/](docs/ddd/) |
-| Linguagem ubíqua e relação com o código | [docs/ddd/linguagem-ubiqua.md](docs/ddd/linguagem-ubiqua.md) |
-| Decisões arquiteturais (ADR) | [docs/adr/](docs/adr/README.md) |
-| Relatório de vulnerabilidades | [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md) |
-| Relatório de cobertura de testes | [docs/relatorios/cobertura.md](docs/relatorios/cobertura.md) |
-| Coleção Postman com o fluxo completo | [docs/api/](docs/api/fiap-auto-repair-shop.postman_collection.json) |
-| Vídeo de apresentação | a preencher com o link do YouTube |
+| Quadro do Miro: Event Storming, mapa de contexto, agregados, C4, linguagem ubíqua e sequência da aprovação | [Abrir no Miro](https://miro.com/app/board/uXjVETqKFIw=/?share_link_id=264441124958) |
+| Event Storming dos três fluxos (criação da OS, acompanhamento e peças e insumos) | [docs/ddd/event-storming.pdf](docs/ddd/event-storming.pdf) |
+| Mapa de contexto, agregados, C4 níveis 1 a 3, relação com o código, linguagem ubíqua e diagrama de sequência | [docs/ddd/diagramas.pdf](docs/ddd/diagramas.pdf) |
+| Glossário completo, com os termos a evitar e onde cada um aparece no código | [docs/ddd/linguagem-ubiqua.md](docs/ddd/linguagem-ubiqua.md) |
+| Decisões de arquitetura (ADR) | [docs/adr/](docs/adr/README.md) |
+| Relatório de vulnerabilidades (SonarCloud, Trivy, OWASP ZAP e OWASP Top 10) | [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md) |
+| Relatório de cobertura dos testes | [docs/relatorios/cobertura.md](docs/relatorios/cobertura.md) |
+| Coleção do Postman com o fluxo completo da OS | [docs/api/](docs/api/fiap-auto-repair-shop.postman_collection.json) |
+| Vídeo da apresentação | a preencher com o link do YouTube |
 
 ## Arquitetura
 
@@ -218,7 +221,7 @@ O workflow [ci.yml](.github/workflows/ci.yml) roda em cada pull request e em cad
 - análise de qualidade e segurança de código no SonarCloud;
 - varredura de vulnerabilidades do repositório e da imagem com Trivy.
 
-O resultado da análise de vulnerabilidades da versão entregue está em [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md).
+O resultado da análise de vulnerabilidades da versão entregue está em [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md): SonarCloud, Trivy, uma varredura da API com o OWASP ZAP e a situação de cada item do OWASP Top 10.
 
 ## Estrutura de diretórios
 
@@ -227,7 +230,7 @@ O resultado da análise de vulnerabilidades da versão entregue está em [docs/r
 ├── .github/workflows/      pipeline de CI
 ├── docs/
 │   ├── adr/                decisões arquiteturais
-│   ├── ddd/                documentação DDD exportada e linguagem ubíqua
+│   ├── ddd/                Event Storming e diagramas exportados do Miro, linguagem ubíqua
 │   ├── relatorios/         vulnerabilidades e cobertura
 │   └── api/                coleção Postman
 ├── src/main/java/br/com/fiap/autorepairshop/

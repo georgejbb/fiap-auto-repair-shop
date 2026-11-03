@@ -6,15 +6,11 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import java.util.Map;
 
-/**
- * Cria pela API os cadastros de que as ordens de serviço dependem.
- */
 public final class ApiFixtures {
 
     private ApiFixtures() {
     }
 
-    /** Cliente e veículo dele, com o documento usado na consulta pública. */
     public record CustomerWithVehicle(String customerId, String document, String vehicleId, String licensePlate) {
     }
 
@@ -64,7 +60,6 @@ public final class ApiFixtures {
                 .then().statusCode(201).extract().path("code");
     }
 
-    /** Abre a OS, inicia o diagnóstico, inclui os itens e conclui o diagnóstico. */
     public static String awaitingApproval(CustomerWithVehicle owner, String serviceId, String partId, int quantity) {
         String code = openWorkOrder(owner);
         String base = "/api/admin/work-orders/" + code;

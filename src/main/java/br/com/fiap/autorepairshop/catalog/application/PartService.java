@@ -15,9 +15,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Casos de uso de peças, insumos e estoque.
- */
 @ApplicationScoped
 public class PartService {
 
@@ -60,7 +57,6 @@ public class PartService {
         parts.update(part);
     }
 
-    /** Soma a quantidade ao estoque e registra a movimentação na mesma transação. */
     @Transactional
     public Part registerInbound(UUID id, int quantity) {
         Part part = get(id);
@@ -70,7 +66,6 @@ public class PartService {
         return part;
     }
 
-    /** Fixa o estoque na quantidade contada e registra a diferença na mesma transação. */
     @Transactional
     public Part adjustStock(UUID id, int countedQuantity) {
         Part part = get(id);

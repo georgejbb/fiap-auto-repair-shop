@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import java.sql.SQLException;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.DataException;
 import org.junit.jupiter.api.Test;
 
 class DomainAndPersistenceMappersTest {
@@ -67,6 +68,12 @@ class DomainAndPersistenceMappersTest {
         ConstraintViolationException violation = new ConstraintViolationException(
                 "duplicate key", new SQLException("duplicate key"), "ux_customer_document_active");
         problem(persistenceMapper.toResponse(new PersistenceException("flush", violation)), 409);
+    }
+
+    @Test
+    void valueRejectedByDatabaseBecomes400() {
+        DataException invalidValue = new DataException("invalid byte sequence", new SQLException("0x00", "22021"));
+        problem(persistenceMapper.toResponse(new PersistenceException("flush", invalidValue)), 400);
     }
 
     @Test

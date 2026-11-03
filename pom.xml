@@ -28,7 +28,6 @@
         <sonar.organization>georgejbb</sonar.organization>
         <sonar.projectKey>georgejbb_fiap-auto-repair-shop</sonar.projectKey>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/jacoco-report/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.exclusions>**/package-info.java</sonar.exclusions>
 
         <!-- Cobertura mínima exigida nas camadas de domínio e aplicação -->
         <coverage.minimum>0.80</coverage.minimum>

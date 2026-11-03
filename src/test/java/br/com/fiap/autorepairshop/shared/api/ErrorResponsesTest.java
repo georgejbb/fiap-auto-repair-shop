@@ -28,6 +28,16 @@ class ErrorResponsesTest {
     }
 
     @Test
+    void responsesCarrySecurityHeaders() {
+        given()
+                .when().get("/q/openapi")
+                .then()
+                .statusCode(200)
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Cross-Origin-Resource-Policy", "same-origin");
+    }
+
+    @Test
     void invalidBodyReturns400WithFieldErrors() {
         given()
                 .contentType(ContentType.JSON)

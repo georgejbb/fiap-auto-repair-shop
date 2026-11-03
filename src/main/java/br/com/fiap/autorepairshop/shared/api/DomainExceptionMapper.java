@@ -12,9 +12,6 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 
-/**
- * Converte as exceções de domínio no status HTTP correspondente.
- */
 @Provider
 public class DomainExceptionMapper implements ExceptionMapper<DomainException> {
 

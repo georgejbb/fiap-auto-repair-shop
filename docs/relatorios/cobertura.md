@@ -1,19 +1,19 @@
 # Relatório de cobertura de testes
 
-Data: 28/10/2026. Versão: branch `docs/delivery`, criada a partir do commit `f17b8a7` da `main`. Fonte: relatório JaCoCo de `./mvnw clean verify` (`target/jacoco-report/jacoco.csv`).
+Data: 29/10/2026. Versão: branch `docs/ddd-exports`, criada a partir do commit `8e7e1f4` da `main`. Fonte: relatório JaCoCo de `./mvnw clean verify` (`target/jacoco-report/jacoco.csv`).
 
 ## Resultado
 
-- 288 testes, em 34 classes de teste, sem falhas.
+- 291 testes, em 34 classes de teste, sem falhas.
 - Requisito do enunciado: 80% de cobertura nos domínios críticos.
 - Critério adotado: cobertura de linhas e de ramificações das camadas `domain` e `application` de todos os contextos. O build falha abaixo de 80% (regra `jacoco:check` no `pom.xml`).
 
 | Escopo | Linhas | Ramificações |
 |---|---|---|
 | Camadas `domain` e `application` (critério do build) | 99,8% (665 de 666) | 97,7% (168 de 172) |
-| Projeto inteiro | 99,0% (1.198 de 1.210) | 97,4% (261 de 268) |
+| Projeto inteiro | 99,0% (1.201 de 1.213) | 97,4% (263 de 270) |
 
-O SonarCloud calcula 99,3% na análise da `main`, com 99,8% das linhas e 97,4% das ramificações. A diferença em relação ao JaCoCo local vem das exclusões configuradas no Sonar (`package-info.java`) e da forma como ele combina linhas e ramificações num único indicador.
+O SonarCloud calcula 99,3% na análise da `main`, com 99,8% das linhas e 97,4% das ramificações. A diferença em relação ao JaCoCo local vem da forma como o Sonar combina linhas e ramificações num único indicador.
 
 ## Por contexto e camada
 
@@ -38,7 +38,7 @@ Ramificações aparecem como "não se aplica" onde a camada não tem desvio cond
 | | api | 100,0% (7 de 7) | não se aplica |
 | | infrastructure | 57,9% (11 de 19) | não se aplica |
 | Compartilhado (`shared`) | domain | 100,0% (31 de 31) | 92,9% (13 de 14) |
-| | api | 100,0% (76 de 76) | 100,0% (32 de 32) |
+| | api | 100,0% (79 de 79) | 100,0% (34 de 34) |
 | | infrastructure | 100,0% (2 de 2) | não se aplica |
 
 O menor índice é o da infraestrutura de Identidade. As linhas não cobertas são do método `add` do repositório Panache do usuário administrativo. Esse método só grava o usuário quando ele ainda não existe no banco. O banco de teste dos Dev Services é reaproveitado entre execuções, e nesta execução o usuário já existia quando a aplicação subiu. A regra de criação do usuário é testada em `AdminUserSeederTest`, com repositório simulado. Essa camada fica fora do critério de 80%.
