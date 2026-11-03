@@ -30,7 +30,7 @@ O quadro do Miro é a fonte da documentação DDD. Os PDFs em `docs/ddd/` são c
 | Relatório de vulnerabilidades (SonarCloud, Trivy, OWASP ZAP e OWASP Top 10) | [docs/relatorios/vulnerabilidades.md](docs/relatorios/vulnerabilidades.md) |
 | Relatório de cobertura dos testes | [docs/relatorios/cobertura.md](docs/relatorios/cobertura.md) |
 | Coleção do Postman com o fluxo completo da OS | [docs/api/](docs/api/fiap-auto-repair-shop.postman_collection.json) |
-| Vídeo da apresentação | a preencher com o link do YouTube |
+| Vídeo da apresentação | [Assistir no YouTube](https://youtu.be/3K5N2WR4vcM) |
 
 ## Arquitetura
 
